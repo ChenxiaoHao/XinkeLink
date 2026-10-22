@@ -1,0 +1,12 @@
+<view class="page-header" style="padding-top: {{statusHeight}}px;">
+  <view class="header-row" style="height: {{navigationHeight}}px; padding-right: {{rightSpace}}px;">
+    <view class="header-symbol {{profile ? 'header-symbol--profile' : ''}} {{logoSrc ? 'header-symbol--brand' : ''}}">
+      <image wx:if="{{logoSrc}}" class="header-brand-image" src="{{logoSrc}}" mode="aspectFit" />
+      <image wx:else src="/assets/icons/{{profile ? 'user-round-white' : 'graduation-cap-primary'}}.png" mode="aspectFit" />
+    </view>
+    <view class="header-copy">
+      <text class="header-title">{{title}}</text>
+      <text wx:if="{{subtitle}}" class="header-subtitle">{{subtitle}}</text>
+    </view>
+  </view>
+</view>

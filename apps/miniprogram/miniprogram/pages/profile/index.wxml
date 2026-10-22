@@ -1,0 +1,2 @@
+<page-header title="我的" profile="{{true}}" />
+<view class="page-content"><view class="page-body" /></view>

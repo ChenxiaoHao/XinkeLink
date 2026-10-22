@@ -1,0 +1,24 @@
+@import "./styles/tokens.wxss";
+
+page {
+  background: var(--xlk-color-background);
+  color: var(--xlk-color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+button::after { border: 0; }
+button { font-family: inherit; }
+
+.page-content {
+  padding: var(--xlk-space-4);
+  padding-bottom: calc(144rpx + env(safe-area-inset-bottom));
+}
+
+.page-heading { display: flex; align-items: baseline; gap: var(--xlk-space-2); }
+.page-title { font-size: 36rpx; font-weight: 600; }
+.page-subtitle { color: var(--xlk-color-muted); font-size: 20rpx; }
+.page-categories { display: flex; gap: var(--xlk-space-4); margin-top: var(--xlk-space-3); white-space: nowrap; font-size: 24rpx; }
+.page-categories__selected { color: var(--xlk-color-primary-strong); font-weight: 600; border-bottom: 4rpx solid var(--xlk-color-primary); padding-bottom: var(--xlk-space-1); }
+.page-body { min-height: 360rpx; }

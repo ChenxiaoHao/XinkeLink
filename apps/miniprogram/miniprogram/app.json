@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/forum/index",
+    "pages/market/index",
+    "pages/contact/index",
+    "pages/profile/index"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F7F8FD",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#8A93A3",
+    "selectedColor": "#6489B8",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      { "pagePath": "pages/forum/index", "text": "论坛" },
+      { "pagePath": "pages/market/index", "text": "交易" },
+      { "pagePath": "pages/contact/index", "text": "联系" },
+      { "pagePath": "pages/profile/index", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json",
+  "usingComponents": {
+    "page-header": "/components/page-header/index"
+  }
+}

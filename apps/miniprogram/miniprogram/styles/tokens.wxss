@@ -1,0 +1,23 @@
+/* Custom tabBar lives outside page; its explicit theme root needs the same tokens. */
+page, .xlk-theme {
+  --xlk-color-primary: #6489B8;
+  --xlk-color-primary-strong: #3D638E;
+  --xlk-color-primary-soft: #EEF3FD;
+  --xlk-color-background: #F7F8FD;
+  --xlk-color-surface: #FFFFFF;
+  --xlk-color-text: #202C3E;
+  --xlk-color-muted: #8A93A3;
+  --xlk-color-border: #E8ECF4;
+  --xlk-space-1: 8rpx;
+  --xlk-space-2: 16rpx;
+  --xlk-space-3: 24rpx;
+  --xlk-space-4: 32rpx;
+  --xlk-space-6: 48rpx;
+  --xlk-space-8: 64rpx;
+  --xlk-radius-sm: 16rpx;
+  --xlk-radius-md: 24rpx;
+  --xlk-radius-lg: 32rpx;
+  --xlk-radius-sheet: 48rpx;
+  --xlk-shadow-card: 0 4rpx 20rpx rgba(42, 64, 97, 0.06);
+  --xlk-shadow-button: 0 4rpx 14rpx rgba(61, 99, 142, 0.24);
+}

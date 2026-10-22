@@ -1,0 +1,25 @@
+.publish-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: flex-end; background: rgba(26, 33, 46, 0.38); }
+.publish-sheet { box-sizing: border-box; width: 100%; padding: 12rpx var(--xlk-space-4) calc(var(--xlk-space-8) + env(safe-area-inset-bottom)); border-radius: var(--xlk-radius-sheet) var(--xlk-radius-sheet) 0 0; background: var(--xlk-color-surface); }
+.sheet-handle { width: 76rpx; height: 6rpx; margin: 8rpx auto 36rpx; border-radius: 6rpx; background: #DFE5F0; }
+.sheet-heading { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 36rpx; }
+.sheet-title, .sheet-subtitle { display: block; }
+.sheet-title { font-size: 34rpx; font-weight: 600; line-height: 1.5; }
+.sheet-subtitle { margin-top: 4rpx; font-size: 20rpx; color: var(--xlk-color-muted); }
+.sheet-close { display: flex; align-items: center; justify-content: center; width: 60rpx; height: 60rpx; margin: 0; padding: 0; border-radius: 50%; background: var(--xlk-color-primary-soft); }
+.sheet-close image { width: 30rpx; height: 30rpx; }
+.sheet-close::after, .publish-card::after { border: 0; }
+.publish-options { display: flex; gap: var(--xlk-space-3); }
+.publish-card { position: relative; flex: 1; min-width: 0; margin: 0; padding: 30rpx; border-radius: var(--xlk-radius-md); background: var(--xlk-color-background); text-align: left; font-weight: normal; line-height: 1.5; color: var(--xlk-color-text); }
+.publish-card--post { background: var(--xlk-color-primary-soft); }
+.card-icon { display: flex; justify-content: center; align-items: center; width: 96rpx; height: 96rpx; margin-bottom: var(--xlk-space-3); border-radius: 50%; background: #E0E6ED; }
+.card-icon--post { background: #D8E3F4; }
+.card-icon image { width: 42rpx; height: 42rpx; }
+.card-dot { position: absolute; top: 24rpx; right: 24rpx; width: 14rpx; height: 14rpx; border-radius: 50%; background: var(--xlk-color-primary-strong); }
+.card-title { display: block; font-size: 30rpx; font-weight: 600; }
+.card-description { display: block; margin-top: 8rpx; font-size: 20rpx; color: var(--xlk-color-muted); }
+.card-link { display: flex; align-items: center; gap: 8rpx; margin-top: 48rpx; font-size: 22rpx; color: #667284; }
+.card-link--post { color: var(--xlk-color-primary-strong); }
+.card-link image { width: 26rpx; height: 26rpx; }
+.sheet-notice { display: flex; align-items: center; justify-content: center; gap: 12rpx; margin-top: var(--xlk-space-3); padding: 20rpx 12rpx; border-radius: var(--xlk-radius-sm); background: var(--xlk-color-background); color: var(--xlk-color-muted); font-size: 18rpx; }
+.sheet-notice image { width: 24rpx; height: 24rpx; flex-shrink: 0; }
+.control-pressed { opacity: 0.75; }

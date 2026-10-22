@@ -1,0 +1,17 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  color: var(--xlk-color-text);
+  background: var(--xlk-color-background);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; }
+.bootstrap-page { max-width: 880px; margin: 80px auto; padding: var(--xlk-space-6); }
+.bootstrap-heading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--xlk-space-4); margin-bottom: var(--xlk-space-6); }
+.bootstrap-heading h1 { margin: 0; font-size: 26px; font-weight: 600; }
+.connection-card { padding: var(--xlk-space-8); border: 1px solid var(--xlk-color-border); border-radius: var(--xlk-radius-lg); background: var(--xlk-color-surface); box-shadow: var(--xlk-shadow-card); }
+.connection-card h2 { margin: 0 0 var(--xlk-space-4); font-size: 18px; font-weight: 500; }
+.connection-card p { margin: 0 0 var(--xlk-space-6); color: var(--xlk-color-muted); line-height: 1.8; }
+.connection-result { margin-top: var(--xlk-space-6); }
+@media (max-width: 640px) { .bootstrap-page { margin: 32px auto; padding: var(--xlk-space-4); } }

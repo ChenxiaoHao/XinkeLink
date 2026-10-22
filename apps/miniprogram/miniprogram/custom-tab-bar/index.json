@@ -1,0 +1,7 @@
+{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {
+    "publish-sheet": "/components/publish-sheet/index"
+  }
+}

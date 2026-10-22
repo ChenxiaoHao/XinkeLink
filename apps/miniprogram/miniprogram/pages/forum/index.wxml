@@ -1,0 +1,23 @@
+<view class="forum-navigation"><page-header title="信科 Link" subtitle="Forum" logo-src="/assets/brand/xinkelink-mark.png" /></view>
+<view class="forum-home">
+  <view class="forum-heading">
+    <view class="forum-heading-title"><text class="forum-dot" /><text>发现校园动态</text></view>
+    <button class="forum-search" bindtap="onSearchTap" aria-label="搜索校园动态"><image class="forum-search-icon" src="/assets/icons/search-primary.png" /></button>
+  </view>
+  <scroll-view class="forum-category-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+    <view class="forum-categories">
+      <button wx:for="{{categories}}" wx:key="key" class="forum-category {{activeCategory === item.key ? 'forum-category--selected' : ''}}" data-category="{{item.key}}" bindtap="onCategoryTap">{{item.label}}</button>
+    </view>
+  </scroll-view>
+  <button class="forum-announcement" bindtap="onAnnouncementTap">
+    <view class="forum-announcement-icon"><image class="forum-announcement-symbol" src="/assets/icons/megaphone-primary.png" /></view>
+    <text class="forum-announcement-label">平台公告</text>
+    <text class="forum-announcement-text">{{announcement}}</text>
+    <image class="forum-announcement-arrow" src="/assets/icons/chevron-right-muted.png" />
+  </button>
+  <view class="forum-feed">
+    <view wx:for="{{posts}}" wx:key="id" id="feed-{{item.id}}" class="forum-feed-item"><forum-post-card post="{{item}}" bind:like="onLikePost" bind:collect="onCollectPost" /></view>
+    <view wx:if="{{!posts.length}}" class="forum-empty">{{searchKeyword ? '没有找到相关动态，试试其他关键词吧' : '这里还没有动态'}}</view>
+    <view wx:else class="forum-feed-end"><text class="forum-end-dot" />{{hasMore ? '上拉查看更多校园动态' : '没有更多动态了，去发布一条吧'}}<text class="forum-end-dot" /></view>
+  </view>
+</view>

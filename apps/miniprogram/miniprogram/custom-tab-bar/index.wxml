@@ -1,0 +1,23 @@
+<view class="xlk-theme">
+  <view class="tab-bar">
+    <block wx:for="{{tabs}}" wx:key="key">
+      <view class="tab-slot">
+        <button class="tab-item {{activeKey === item.key ? 'tab-item--active' : ''}}"
+          data-key="{{item.key}}" bindtap="onTabTap" hover-class="tab-item--pressed"
+          aria-label="{{item.label}}" aria-role="button">
+          <image class="tab-icon"
+            src="/assets/icons/{{item.icon}}-{{activeKey === item.key ? 'primary' : 'muted'}}.png"
+            mode="aspectFit" />
+          <text class="tab-label">{{item.label}}</text>
+        </button>
+      </view>
+      <view wx:if="{{index === 1}}" class="tab-slot publish-slot">
+        <button class="publish-button" bindtap="openPublish" hover-class="publish-button--pressed"
+          aria-label="发布" aria-role="button">
+          <image class="publish-icon" src="/assets/icons/plus-white.png" mode="aspectFit" />
+        </button>
+      </view>
+    </block>
+  </view>
+  <publish-sheet visible="{{publishVisible}}" bind:close="closePublish" bind:select="onPublishSelect" />
+</view>

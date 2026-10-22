@@ -1,0 +1,10 @@
+.page-header { background: var(--xlk-color-background); }
+.header-row { display: flex; align-items: center; box-sizing: border-box; padding-left: var(--xlk-space-4); gap: 12rpx; }
+.header-symbol { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 56rpx; height: 56rpx; border-radius: 50%; background: #E7EFF9; }
+.header-symbol--profile { background: var(--xlk-color-primary-strong); }
+.header-symbol image { width: 30rpx; height: 30rpx; }
+.header-symbol--brand { background: transparent; }
+.header-symbol .header-brand-image { width: 56rpx; height: 56rpx; }
+.header-copy { min-width: 0; }
+.header-title { display: block; font-size: 28rpx; font-weight: 600; line-height: 1.25; }
+.header-subtitle { display: block; margin-top: 2rpx; color: var(--xlk-color-muted); font-size: 18rpx; line-height: 1.1; }
