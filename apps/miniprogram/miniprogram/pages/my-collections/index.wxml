@@ -1,0 +1,13 @@
+<back-header title="喜欢" fallback="/pages/forum/index" />
+<view class="bookmark-page">
+  <view class="bookmark-intro"><text class="bookmark-title">喜欢</text><text class="bookmark-copy">你点过赞的校园动态都在这里。</text></view>
+  <view wx:if="{{loadFailed}}" class="bookmark-empty"><text class="bookmark-empty-title">喜欢暂时无法加载</text><button class="bookmark-action" bindtap="onRetryTap">重试</button></view>
+  <block wx:else>
+    <forum-post-card wx:for="{{posts}}" wx:key="id" home post="{{item}}" bind:open="onOpenPost" bind:like="onLikePost" bind:repost="onRepostPost" bind:collect="onCollectPost" />
+    <view wx:if="{{!posts.length}}" class="bookmark-empty">
+      <text class="bookmark-empty-title">还没有喜欢的帖子</text>
+      <text class="bookmark-copy">在动态下方点心形，喜欢的帖子会留在这里。</text>
+    </view>
+  </block>
+</view>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

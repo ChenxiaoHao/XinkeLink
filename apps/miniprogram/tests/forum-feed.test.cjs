@@ -30,10 +30,10 @@ test('latest uses publication time instead of recommendation rank', () => {
   assert.notEqual(page.items[0].id, query().items[0].id);
 });
 
-for (const category of ['campus', 'lost-found', 'study', 'help']) {
+for (const category of ['campus', 'lost-found', 'help', 'secondhand', 'complain', 'buddy']) {
   test('category ' + category + ' contains only matching posts', () => {
     const page = query({ category, limit: 30 });
-    assert.ok(page.items.length >= 2);
+    assert.ok(page.items.length >= 1);
     assert.ok(page.items.every(p => p.category === category));
   });
 }

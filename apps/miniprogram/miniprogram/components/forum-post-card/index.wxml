@@ -1,18 +1,29 @@
-<view wx:if="{{post}}" class="post-card">
+<view wx:if="{{post}}" class="post-card {{detail ? 'post-card--detail' : ''}} {{home ? 'post-card--home' : ''}} {{secondary ? 'post-card--secondary' : ''}}" style="--post-image-padding: {{singleImagePadding}}%;" bindtap="onOpenTap">
   <view class="post-header">
-    <view class="post-avatar {{post.isAnonymous ? 'post-avatar--anonymous' : ''}}"><image class="post-avatar-image" src="{{post.avatar}}" mode="aspectFill" /></view>
-    <view class="post-author"><text class="post-name">{{post.authorName}}</text><text class="post-time">{{post.timeLabel}}</text></view>
-    <image class="post-more" src="/assets/icons/ellipsis-muted.png" />
+    <view class="post-avatar {{post.isAnonymous ? 'post-avatar--anonymous' : ''}}" catchtap="onAuthorTap"><image class="post-avatar-image" src="{{post.avatar}}" data-source="{{post.avatar}}" binderror="onAvatarError" mode="aspectFill" /></view>
+    <view class="post-author" catchtap="onAuthorTap"><text class="post-name">{{post.authorName}}</text><text wx:if="{{!detail}}" class="post-time"> · {{post.timeLabel}}</text></view>
+    <button class="post-more" catchtap="onMoreTap" aria-label="更多操作"><image src="/assets/icons/x-ellipsis-muted.png" /></button>
   </view>
-  <text class="post-content" user-select>{{post.content}}</text>
-  <view wx:if="{{post.images.length}}" class="post-images post-images--{{post.imageLayout}}">
-    <view wx:for="{{post.images}}" wx:key="index" class="post-image-cell" data-index="{{index}}" bindtap="onImageTap"><image class="post-image" src="{{item}}" mode="aspectFill" lazy-load /></view>
+  <view class="post-body"><text class="post-content" user-select>{{post.content}}</text>
+  <view wx:if="{{post.images.length}}" class="post-images post-images--{{post.imageLayout}} {{home && post.imageLayout === 'single' && singleImagePadding > 105 ? 'post-images--portrait' : ''}}">
+    <view wx:for="{{post.images}}" wx:key="index" class="post-image-cell" data-index="{{index}}" catchtap="onImageTap">
+      <image class="post-image" src="{{item}}" mode="aspectFill" data-source="{{item}}" data-index="{{index}}" bindload="onImageLoad" binderror="onImageError" lazy-load />
+      <view wx:if="{{imageFailures[item]}}" class="post-image-failed"><image class="post-image-failed-icon" src="/assets/icons/camera-primary.png" /><text>图片暂时不可用</text></view>
+    </view>
   </view>
+  <text wx:if="{{detail && post.stamp}}" class="post-stamp">{{post.stamp}}{{post.viewCount ? ' · ' + post.viewCount + ' 次浏览' : ''}}</text>
   <view class="post-footer">
-    <button class="post-action {{post.liked ? 'post-action--active' : ''}}" bindtap="onLikeTap" aria-label="{{post.liked ? '取消点赞' : '点赞'}}"><image class="post-action-icon" src="/assets/icons/heart-{{post.liked ? 'primary-filled' : 'muted'}}.png" /><text>{{post.likeCount}}</text></button>
-    <view class="post-comments" aria-label="{{post.commentCount}}条评论"><image class="post-comments-icon" src="/assets/icons/message-circle-muted.png" /><text>{{post.commentCount}}</text></view>
-    <view class="post-footer-spacer" />
-    <button class="post-action post-action--icon {{post.collected ? 'post-action--active' : ''}}" bindtap="onCollectTap" aria-label="{{post.collected ? '取消收藏' : '收藏'}}"><image class="post-action-icon" src="/assets/icons/bookmark-{{post.collected ? 'primary-filled' : 'muted'}}.png" /></button>
-    <button class="post-action post-action--icon" open-type="share" data-post-id="{{post.id}}" aria-label="分享"><image class="post-action-icon" src="/assets/icons/share-2-muted.png" /></button>
-  </view>
+    <button class="post-action" catchtap="onReplyTap" aria-label="评论">
+      <image class="post-action-icon" src="/assets/icons/x-message-circle-muted.png" />
+      <text wx:if="{{post.commentCount}}">{{post.commentCount}}</text>
+    </button>
+    <button class="post-action {{post.reposted ? 'post-action--reposted' : ''}}" catchtap="onRepostTap" aria-label="{{post.reposted ? '取消转发' : '转发'}}">
+      <image class="post-action-icon" src="/assets/icons/x-repeat-2-{{post.reposted ? 'reposted' : 'muted'}}.png" />
+      <text wx:if="{{post.repostCount}}">{{post.repostCount}}</text>
+    </button>
+    <button class="post-action {{post.liked ? 'post-action--liked' : ''}}" catchtap="onLikeTap" aria-label="{{post.liked ? '取消点赞' : '点赞'}}">
+      <image class="post-action-icon" src="/assets/icons/x-heart-{{post.liked ? 'liked' : 'muted'}}.png" />
+      <text wx:if="{{post.likeCount}}">{{post.likeCount}}</text>
+    </button>
+  </view></view>
 </view>

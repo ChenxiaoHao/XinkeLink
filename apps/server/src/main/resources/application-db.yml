@@ -1,0 +1,26 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  datasource:
+    url: ${XINKELINK_DB_URL}
+    username: ${XINKELINK_DB_USERNAME}
+    password: ${XINKELINK_DB_PASSWORD}
+    hikari:
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+      connection-init-sql: SET time_zone = '+00:00'
+  flyway:
+    enabled: true
+    url: ${XINKELINK_DB_URL}
+    user: ${XINKELINK_MIGRATION_USERNAME}
+    password: ${XINKELINK_MIGRATION_PASSWORD}
+    clean-disabled: true
+    validate-on-migrate: true
+    baseline-on-migrate: false
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    local-cache-scope: STATEMENT
+  global-config:
+    banner: false

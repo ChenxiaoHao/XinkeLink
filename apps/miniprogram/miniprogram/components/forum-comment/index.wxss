@@ -1,0 +1,31 @@
+/* 评论：头像左挂 + 昵称·时间 + 正文 + 动作行（赞 / 回复 / 删除）。
+   数值口径 375 基准 px，与帖子卡同一套缩进。 */
+.comment { display:flex; padding:12px 0; }
+.comment-avatar { flex:none; width:40px; height:40px; margin-right:8px; border-radius:50%; background:#eff3f4; }
+.comment-body { flex:1; min-width:0; }
+
+.comment-heading { display:flex; align-items:baseline; min-height:20px; }
+.comment-name { color:#0f1419; font-size:15px; font-weight:700; line-height:20px; }
+.comment-author-tag { margin-left:4px; padding:0 4px; border-radius:4px; background:#eff3f4; color:#536471; font-size:12px; line-height:16px; }
+.comment-time { margin-left:4px; color:#536471; font-size:15px; line-height:20px; }
+.comment-more { display:flex; align-items:center; justify-content:center; width:24px; min-width:24px; height:20px; margin:0 0 0 auto !important; padding:0; background:transparent; }
+.comment-more image { width:18px; height:18px; }
+
+.comment-content { display:block; margin-top:2px; color:#0f1419; font-size:15px; line-height:20px; white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere; }
+.comment-reply-name { color:#0f1419; }
+.comment-expand { width:max-content; min-width:0; margin:4px 0 0; padding:0; background:transparent; color:#0f1419; font-size:15px; font-weight:400; line-height:20px; text-align:left; }
+
+.comment-meta { display:flex; align-items:center; gap:6px; margin-top:6px; min-height:18px; }
+.comment-stat { display:inline-flex; align-items:center; width:auto; min-width:0; margin:0; padding:0; background:transparent; color:#536471; font-size:13px; font-weight:400; line-height:18px; }
+.comment-sep { color:#536471; font-size:13px; line-height:18px; }
+.comment-stat--liked { color:#f91880; }
+.comment-stat--delete { color:#f4212e; }
+.comment-delete:active, .comment-reply:active, .comment-stat:active { opacity:.6; }
+
+.comment--compact { padding:10px 0; }
+.comment--compact .comment-avatar { width:32px; height:32px; }
+.comment--compact .comment-content { font-size:15px; }
+
+@media (min-width: 500px) {
+  .comment { padding:12px 0; }
+}

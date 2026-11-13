@@ -1,32 +1,66 @@
 {
   "pages": [
+    "pages/beta-access/index",
     "pages/forum/index",
-    "pages/market/index",
     "pages/contact/index",
-    "pages/profile/index"
+    "pages/profile/index",
+    "pages/forum-detail/index",
+    "pages/forum-publish/index",
+    "pages/contact-chat/index",
+    "pages/my-posts/index",
+    "pages/my-collections/index",
+    "pages/profile-edit/index",
+    "pages/user-home/index",
+    "pages/search/index",
+    "pages/report/index",
+    "pages/chat-settings/index",
+    "pages/feedback/index",
+    "pages/notifications/index",
+    "pages/ai/index",
+    "pages/drafts/index",
+    "pages/new-chat/index",
+    "pages/account-feature/index"
   ],
   "window": {
     "navigationStyle": "custom",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F7F8FD",
+    "backgroundColor": "#FFFFFF",
     "backgroundTextStyle": "dark"
   },
   "tabBar": {
     "custom": true,
-    "color": "#8A93A3",
-    "selectedColor": "#6489B8",
+    "color": "#536471",
+    "selectedColor": "#0F1419",
     "backgroundColor": "#FFFFFF",
     "list": [
-      { "pagePath": "pages/forum/index", "text": "论坛" },
-      { "pagePath": "pages/market/index", "text": "交易" },
-      { "pagePath": "pages/contact/index", "text": "联系" },
-      { "pagePath": "pages/profile/index", "text": "我的" }
+      {
+        "pagePath": "pages/forum/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/search/index",
+        "text": "搜索"
+      },
+      {
+        "pagePath": "pages/ai/index",
+        "text": "Link AI"
+      },
+      {
+        "pagePath": "pages/notifications/index",
+        "text": "通知"
+      },
+      {
+        "pagePath": "pages/contact/index",
+        "text": "私信"
+      }
     ]
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
   "sitemapLocation": "sitemap.json",
   "usingComponents": {
-    "page-header": "/components/page-header/index"
+    "page-header": "/components/page-header/index",
+    "profile-auth-sheet": "/components/profile-auth-sheet/index",
+    "app-shell": "/components/app-shell/index"
   }
 }

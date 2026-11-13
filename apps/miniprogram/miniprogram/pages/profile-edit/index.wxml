@@ -1,0 +1,19 @@
+<back-header title="个人资料编辑" fallback="/pages/profile/index" />
+<view class="edit-page">
+  <view wx:if="{{loadFailed}}" class="edit-error"><image src="/assets/icons/archive-muted.png" /><text>个人资料暂时读取失败</text><text>读取成功后才能编辑，已有记录会保留</text><button bindtap="reload">重新读取</button></view>
+  <block wx:else>
+    <button class="edit-avatar-button" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" disabled="{{saving || choosing}}" aria-label="更换头像"><view class="edit-avatar-wrap"><image class="edit-avatar" src="{{form.avatar}}" mode="aspectFill" /><view class="edit-camera"><image src="/assets/icons/camera-primary.png" /></view></view><text>{{choosing ? '正在选择头像' : '点击更换头像'}}</text></button>
+    <view class="edit-card">
+      <view class="edit-field"><label for="profile-nickname">昵称</label><input id="profile-nickname" type="nickname" value="{{form.nickname}}" data-field="nickname" bindinput="onFieldInput" bindblur="onNicknameBlur" maxlength="20" placeholder="填写 1 至 20 字昵称" disabled="{{saving}}" /></view>
+      <view class="edit-bio"><view><label for="profile-bio">个人简介</label><text>{{form.bio.length}}/40</text></view><textarea id="profile-bio" value="{{form.bio}}" data-field="bio" bindinput="onFieldInput" maxlength="40" placeholder="介绍一下自己吧" disabled="{{saving}}" auto-height /></view>
+      <view class="edit-field edit-field--wide"><label for="profile-major">专业</label><input id="profile-major" value="{{form.major}}" data-field="major" bindinput="onFieldInput" maxlength="60" placeholder="可选，填写专业名称" disabled="{{saving}}" /></view>
+      <view class="edit-field edit-field--wide"><label for="profile-class">班级</label><input id="profile-class" value="{{form.className}}" data-field="className" bindinput="onFieldInput" maxlength="40" placeholder="可选，填写所在班级" disabled="{{saving}}" /></view>
+      <view class="edit-field"><label for="profile-student-id">学号</label><input id="profile-student-id" value="{{form.studentId}}" data-field="studentId" bindinput="onFieldInput" maxlength="32" placeholder="可选，仅保存在本机" disabled="{{saving}}" /></view>
+      <view class="edit-field edit-year"><label for="profile-year">入学年份</label><input id="profile-year" value="{{form.year}}" data-field="year" bindinput="onFieldInput" type="number" maxlength="4" placeholder="可选，如 2025" disabled="{{saving}}" /></view>
+      <text class="edit-disclosure">专业、班级和入学年份由用户自填，未经平台核实</text>
+    </view>
+    <view class="edit-note"><image src="/assets/icons/user-round-primary.png" /><text>学号仅保存在当前设备，不会显示在公开主页。</text></view>
+    <button class="edit-save" bindtap="onSaveTap" loading="{{saving}}" disabled="{{saving || choosing}}">{{saving ? '正在保存' : '保存修改'}}</button>
+  </block>
+</view>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

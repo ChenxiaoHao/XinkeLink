@@ -1,0 +1,13 @@
+<back-header title="反馈" fallback="/pages/forum/index" />
+<view class="feedback-page">
+  <text class="fb-title">告诉我们出了什么问题</text>
+  <text class="fb-desc">问题、建议或想吐槽的地方，写在这里就行。</text>
+  <view class="fb-types">
+    <button wx:for="{{types}}" wx:key="key" class="fb-chip {{type === item.key ? 'fb-chip--on' : ''}}" data-key="{{item.key}}" bindtap="onTypeTap" hover-class="none">{{item.label}}</button>
+  </view>
+  <view class="fb-editor"><textarea class="fb-input" placeholder="描述你遇到的问题或建议…" maxlength="1000" value="{{content}}" bindinput="onInput" /><text class="fb-count">{{content.length}}/1000</text></view>
+  <view class="fb-contact"><input class="fb-contact-input" placeholder="联系方式（选填）" value="{{contact}}" bindinput="onContactInput" /></view>
+  <view class="fb-foot"><button class="fb-submit" bindtap="onSubmit" loading="{{busy}}" disabled="{{busy}}">{{busy ? '正在提交' : '提交反馈'}}</button></view>
+</view>
+
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

@@ -1,0 +1,29 @@
+<back-header title="新消息" fallback="/pages/contact/index" />
+<view class="new-chat">
+  <view wx:if="{{loadFailed}}" class="new-chat-empty">
+    <image class="new-chat-symbol" src="/assets/icons/x-chat-ink.png" mode="aspectFit" />
+    <text class="new-chat-empty-title">暂时无法读取联系人</text>
+    <text class="new-chat-empty-copy">网络恢复后再试一次。</text>
+    <button class="new-chat-primary" bindtap="reload">重试</button>
+  </view>
+  <block wx:else>
+    <view class="new-chat-search">
+      <image src="/assets/icons/x-search-muted.png" mode="aspectFit" />
+      <input value="{{query}}" placeholder="搜索联系人" placeholder-class="new-chat-placeholder" confirm-type="search" bindinput="onInput" />
+    </view>
+    <view wx:for="{{visiblePeers}}" wx:key="id" class="new-chat-row" data-peer-id="{{item.id}}" bindtap="onStartChat" hover-class="new-chat-row--pressed">
+      <image class="new-chat-avatar" src="{{item.avatar}}" mode="aspectFill" />
+      <view class="new-chat-copy">
+        <text class="new-chat-name">{{item.nickname}}</text>
+        <text class="new-chat-hint">聊过的同学</text>
+      </view>
+    </view>
+    <view wx:if="{{!visiblePeers.length}}" class="new-chat-empty">
+      <image class="new-chat-symbol" src="/assets/icons/x-chat-ink.png" mode="aspectFit" />
+      <text class="new-chat-empty-title">{{query ? '没有找到这位同学' : '还没有聊过的同学'}}</text>
+      <text class="new-chat-empty-copy">{{query ? '换个名字再搜一次。' : '在动态里点作者头像，就能发起私信。'}}</text>
+      <button class="new-chat-primary" bindtap="onBrowseFeed">去看看校园动态</button>
+    </view>
+  </block>
+</view>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

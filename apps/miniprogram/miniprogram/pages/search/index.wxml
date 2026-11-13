@@ -1,0 +1,26 @@
+<app-shell id="app-shell"><view class="explore-header"><page-header title="" search-mode query="{{query}}" bind:input="onInput" bind:submit="onSubmit" bind:focus="onFocus"/></view>
+ <view class="explore-body">
+ <block wx:if="{{hasSearched}}"><view wx:if="{{searching}}" class="x-load">正在搜索</view><view wx:elif="{{searchFailed}}" class="x-load"><text>搜索暂时无法加载</text><button bindtap="onSubmit">重试</button></view><block wx:else><forum-post-card wx:for="{{postResults}}" wx:key="id" post="{{item}}" bind:open="onOpenPost" bind:like="onLikePost" bind:repost="onRepostPost" bind:collect="onCollectPost"/><view wx:if="{{!postResults.length}}" class="x-load">没有找到相关结果</view><button wx:if="{{postHasMore}}" class="search-more" bindtap="onLoadMoreTap">{{loadingType ? '正在加载' : postPageFailed ? '重试加载' : '显示更多'}}</button></block></block>
+ <block wx:else>
+  <view wx:if="{{history.length}}" class="recent">
+   <view class="recent-head"><text class="recent-title">最近</text><button class="recent-clear" bindtap="onClearHistory">全部清除</button></view>
+   <view wx:for="{{history}}" wx:key="query" class="recent-row" data-index="{{index}}" bindtap="onHistoryTap" hover-class="recent-row--pressed">
+    <image class="recent-icon" src="/assets/icons/x-history-ink.png" aria-hidden="true"/>
+    <text class="recent-text">{{item.query}}</text>
+    <button class="recent-remove" data-index="{{index}}" catchtap="onRemoveHistory" hover-class="none" aria-label="删除这条搜索记录"><image src="/assets/icons/x-x-ink.png"/></button>
+   </view>
+  </view>
+  <view class="x-band"></view>
+  <view class="trends-head"><text class="trends-title">热榜</text><text class="trends-note">当周 · 按点赞</text></view>
+  <view wx:for="{{hot}}" wx:key="id" class="trend" data-id="{{item.id}}" bindtap="onHotTap" hover-class="trend--pressed">
+   <view class="trend-copy">
+    <text class="trend-context">{{item.rank}} · {{item.categoryLabel}} · 热榜</text>
+    <text class="trend-name">{{item.excerpt}}</text>
+    <text class="trend-meta">{{item.meta}}</text>
+   </view>
+   <image class="trend-more" src="/assets/icons/x-ellipsis-muted.png" aria-hidden="true"/>
+  </view>
+  <view wx:if="{{hotFailed}}" class="x-load"><text>热门暂时无法加载</text><button bindtap="readHot">重试</button></view>
+  <view wx:elif="{{!hot.length}}" class="x-load"><text>还没有热门帖子</text><text>点赞多了就会排到这里。</text></view>
+ </block></view>
+ </app-shell><profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel"/>

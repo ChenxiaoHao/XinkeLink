@@ -1,0 +1,22 @@
+<view wx:if="{{comment}}" class="comment {{compact ? 'comment--compact' : ''}}">
+  <image class="comment-avatar" src="{{comment.avatar}}" mode="aspectFill" />
+  <view class="comment-body">
+    <view class="comment-heading">
+      <text class="comment-name">{{comment.authorName}}</text>
+      <text wx:if="{{comment.isAuthor}}" class="comment-author-tag">作者</text>
+      <text class="comment-time">· {{comment.timeLabel}}</text>
+      <button class="comment-more" catchtap="onReport" aria-label="更多操作"><image src="/assets/icons/x-ellipsis-muted.png" /></button>
+    </view>
+    <text class="comment-content" user-select bindlongpress="onReport"><text wx:if="{{comment.replyToName}}" class="comment-reply-name">回复 {{comment.replyToName}}：</text>{{comment.content}}</text>
+    <button wx:if="{{comment.canExpand}}" class="comment-expand" catchtap="onExpand">{{comment.expanded ? '收起' : '展开全文'}}</button>
+    <!-- 设计稿的动作行是「5 赞 · 1 条回复」这样的文字串，不用图标；点赞与回复仍可点。
+         二级回复默认不占这一行（设计稿里是干净的「昵称 + 正文」），有赞或属于自己时才出现。 -->
+    <view wx:if="{{!compact || comment.likeCount || comment.isMine}}" class="comment-meta">
+      <button class="comment-stat {{comment.liked ? 'comment-stat--liked' : ''}}" catchtap="onLike" aria-label="{{comment.liked ? '取消评论点赞' : '点赞评论'}}">{{comment.likeCount || 0}} 赞</button>
+      <text class="comment-sep">·</text>
+      <button class="comment-stat" catchtap="onReply">{{comment.replyCount ? comment.replyCount + ' 条回复' : '回复'}}</button>
+      <text wx:if="{{comment.isMine}}" class="comment-sep">·</text>
+      <button wx:if="{{comment.isMine}}" class="comment-stat comment-stat--delete" catchtap="onDelete">删除</button>
+    </view>
+  </view>
+</view>

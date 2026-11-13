@@ -1,32 +1,30 @@
-.forum-navigation { position: sticky; top: 0; z-index: 20; background: var(--xlk-color-background); }
-.forum-home { padding: 12rpx 28rpx calc(156rpx + env(safe-area-inset-bottom)); }
-.forum-heading { display: flex; align-items: center; justify-content: space-between; height: 72rpx; }
-.forum-heading-title { display: flex; align-items: center; font-size: 26rpx; font-weight: 600; color: var(--xlk-color-primary-strong); }
-.forum-dot { width: 10rpx; height: 10rpx; border-radius: 50%; margin-right: 8rpx; background: var(--xlk-color-primary); }
-.forum-home .forum-search { display: flex; align-items: center; justify-content: center; width: 64rpx; min-width: 64rpx; height: 64rpx; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--xlk-color-surface); }
-.forum-search-icon { width: 32rpx; height: 32rpx; }
-.forum-search::after, .forum-category::after, .forum-announcement::after { border: 0; }
-.forum-category-scroll { width: 100%; margin: 8rpx 0 20rpx; }
-.forum-categories { display: flex; align-items: center; white-space: nowrap; }
-.forum-home .forum-category {
-  position: relative; flex: 0 0 auto; width: auto; min-width: 0; max-width: none; height: 60rpx;
-  padding: 0; margin: 0 24rpx 0 0; border: 0; border-radius: 0; background: transparent;
-  font-size: 25rpx; font-weight: 400; line-height: 52rpx; color: #6E7889;
-}
-.forum-home .forum-category:last-child { margin-right: 0; }
-.forum-home .forum-category--selected { color: var(--xlk-color-primary-strong); font-weight: 600; }
-.forum-category--selected::before { content: ''; position: absolute; bottom: 0; left: 50%; width: 32rpx; height: 5rpx; margin-left: -16rpx; border-radius: 5rpx; background: var(--xlk-color-primary); }
-.forum-home .forum-announcement {
-  display: flex; align-items: center; width: 100%; min-width: 0; height: 80rpx; margin: 0 0 24rpx; padding: 0 16rpx;
-  border: 0; border-radius: var(--xlk-radius-md); background: var(--xlk-color-primary-soft); text-align: left;
-  font-size: 23rpx; font-weight: 400; line-height: 1.5;
-}
-.forum-announcement-icon { display: flex; flex: 0 0 48rpx; width: 48rpx; height: 48rpx; align-items: center; justify-content: center; border-radius: 50%; background: #DDE8FC; margin-right: 12rpx; }
-.forum-announcement-symbol { width: 28rpx; height: 28rpx; }
-.forum-announcement-label { flex-shrink: 0; color: var(--xlk-color-primary-strong); font-weight: 600; margin-right: 12rpx; }
-.forum-announcement-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #5C687C; }
-.forum-announcement-arrow { width: 24rpx; height: 24rpx; flex-shrink: 0; margin-left: 8rpx; }
-.forum-feed-item { margin-bottom: 24rpx; }
-.forum-feed-end { display: flex; align-items: center; justify-content: center; padding: 20rpx 0 32rpx; font-size: 21rpx; color: var(--xlk-color-muted); }
-.forum-end-dot { width: 8rpx; height: 8rpx; background: #D8DFEC; border-radius: 50%; margin: 0 12rpx; }
-.forum-empty { text-align: center; padding: 96rpx 12rpx; color: var(--xlk-color-muted); font-size: 25rpx; }
+/* 首页：6 个真实板块（推荐/最新/校园生活/失物招领/学习交流/校园互助），
+   横向可滚动，不做「关注」这种没有后端的假维度。 */
+.forum-navigation { position:sticky; top:0; z-index:120; background:#fff; }
+.forum-home { background:#fff; min-height:75vh; padding-bottom:calc(100px + env(safe-area-inset-bottom)); }
+
+.timeline-tabs { display:flex; height:53px; border-bottom:1px solid #eff3f4; white-space:nowrap; }
+.timeline-tab { flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; height:53px; margin:0; padding:0 14px; background:transparent; color:#536471; font-size:15px; font-weight:500; border-radius:0; }
+.timeline-tab text { line-height:20px; }
+.timeline-tab-underline { width:0; height:4px; margin-top:1px; border-radius:2px; background:transparent; }
+.timeline-tab--active { color:#0f1419; font-weight:700; }
+.timeline-tab--active .timeline-tab-underline { width:100%; background:#0f1419; }
+
+.feed-tools { height:34px; display:flex; justify-content:space-between; align-items:center; padding:0 16px; border-bottom:1px solid #eff3f4; }
+.feed-tools button { display:flex; align-items:center; gap:5px; background:transparent; color:#536471; font-size:12px; padding:0; margin:0; }
+.feed-tools image { width:15px; height:15px; }
+
+.forum-feed-item { border-bottom:1px solid #eff3f4; }
+.forum-feed-end { padding:24px 16px; text-align:center; font-size:13px; color:#536471; }
+
+.feed-state { padding:40px 32px; max-width:400px; margin:auto; color:#536471; font-size:15px; line-height:1.5; }
+.feed-state-title { display:block; color:#0f1419; font-size:20px; font-weight:700; margin-bottom:8px; }
+.feed-state button { width:max-content; margin:24px 0 0 !important; padding:0 20px; height:36px; background:#0f1419; color:#fff; border-radius:18px; font-size:15px; font-weight:700; line-height:36px; }
+
+.timeline-tab { min-width:0; width:auto; }
+.feed-tools button { min-width:0; width:auto; font-weight:400; }
+.feed-state button { min-width:0; }
+
+/* 公告入口挂在页头右侧插槽（与私信页下拉同位）。 */
+.feed-info { display:flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; margin:0; background:transparent; border-radius:50%; }
+.feed-info image { width:20px; height:20px; }

@@ -7,23 +7,9 @@ test('a regular tab requests the correct native route', () => {
   const { instance } = loadComponent('custom-tab-bar/index.js', {
     wx: { switchTab: (options) => calls.push(options) },
   });
-  instance.onTabTap({ currentTarget: { dataset: { key: 'market' } } });
+  instance.onTabTap({ currentTarget: { dataset: { key: 'search' } } });
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, '/pages/market/index');
-});
-
-test('the central action opens the sheet without switching page', () => {
-  let switches = 0;
-  const { instance } = loadComponent('custom-tab-bar/index.js', {
-    wx: { switchTab: () => switches++ },
-  });
-  instance.openPublish();
-  instance.openPublish();
-  assert.equal(instance.data.publishVisible, true);
-  assert.equal(switches, 0);
-  instance.closePublish();
-  assert.equal(instance.data.publishVisible, false);
-  assert.equal(instance.data.activeKey, 'forum');
+  assert.equal(calls[0].url, '/pages/search/index');
 });
 
 test('failed navigation keeps the current selected tab', () => {
@@ -34,7 +20,7 @@ test('failed navigation keeps the current selected tab', () => {
       showToast: (options) => messages.push(options.title),
     },
   });
-  instance.onTabTap({ currentTarget: { dataset: { key: 'profile' } } });
+  instance.onTabTap({ currentTarget: { dataset: { key: 'notifications' } } });
   assert.equal(instance.data.activeKey, 'forum');
   assert.equal(messages.length, 1);
 });
@@ -57,26 +43,5 @@ test('invalid tabs and the already selected tab do not navigate', () => {
   assert.equal(switches, 0);
 });
 
-for (const [type, feedback] of [['post', '已选择发布帖子'], ['product', '已选择发布闲置']]) {
-  test('selecting ' + type + ' closes the sheet and acknowledges the correct choice', () => {
-    const messages = [];
-    const { instance, events } = loadComponent('custom-tab-bar/index.js', {
-      wx: { showToast: (options) => messages.push(options.title) },
-    });
-    instance.openPublish();
-    instance.onPublishSelect({ detail: { type } });
-    assert.equal(instance.data.publishVisible, false);
-    assert.equal(instance.data.activeKey, 'forum');
-    assert.equal(events[0].name, 'publishselect');
-    assert.equal(events[0].detail.type, type);
-    assert.equal(messages[0], feedback);
-  });
-}
-
-test('an invalid publish selection leaves the panel open', () => {
-  const { instance, events } = loadComponent('custom-tab-bar/index.js');
-  instance.openPublish();
-  instance.onPublishSelect({ detail: { type: 'payment' } });
-  assert.equal(instance.data.publishVisible, true);
-  assert.equal(events.length, 0);
-});
+test('publish action opens the post composer directly without changing the active tab',()=>{const routes=[];const {instance}=loadComponent('custom-tab-bar/index.js',{wx:{navigateTo:o=>routes.push(o.url),switchTab(){throw Error('unexpected switch')}}});instance.openPublish();assert.deepEqual(routes,['/pages/forum-publish/index']);assert.equal(instance.data.activeKey,'forum');assert.equal(instance.data.publishVisible,false);});
+test('publish navigation failure exposes retry feedback',()=>{const messages=[];const {instance}=loadComponent('custom-tab-bar/index.js',{wx:{navigateTo:o=>o.fail(),showToast:o=>messages.push(o.title)}});instance.openPublish();assert.equal(messages.length,1);});

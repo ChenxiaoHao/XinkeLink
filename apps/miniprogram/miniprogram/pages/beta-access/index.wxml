@@ -1,0 +1,24 @@
+<view class="beta-page">
+  <view class="beta-brand"><image src="/assets/brand/xinkelink-mark.png" mode="aspectFit" /><text>信科 Link</text></view>
+  <view class="beta-form">
+    <text class="beta-title">欢迎加入校园内测</text>
+    <text class="beta-description">当前仅向受邀同学开放。登录后填写内测码，即可进入校园社区。</text>
+    <view wx:if="{{stage === 'checking'}}" class="beta-state" aria-live="polite"><text>正在确认准入状态…</text></view>
+    <view wx:elif="{{stage === 'entering'}}" class="beta-state" aria-live="polite"><text>准入已确认，正在进入…</text></view>
+    <view wx:elif="{{stage === 'login'}}" class="beta-login">
+      <text class="beta-label">先登录微信账号</text>
+      <text class="beta-help">确认头像和昵称后，内测资格将绑定到此账号。</text>
+      <button class="beta-primary" bindtap="onLoginTap" loading="{{loggingIn || authSaving}}" disabled="{{loggingIn || checking || authSaving}}">{{authSaving ? '正在结束上次登录' : loggingIn ? '等待登录确认' : '微信登录并继续'}}</button>
+    </view>
+    <view wx:elif="{{stage === 'code'}}" class="beta-code">
+      <label class="beta-label" for="beta-code">内测码</label>
+      <input id="beta-code" class="beta-input" value="{{code}}" placeholder="填写你收到的内测码" maxlength="64" bindinput="onCodeInput" bindconfirm="onActivateTap" confirm-type="done" disabled="{{submitting}}" adjust-position="true" />
+      <text class="beta-help">一个内测码仅限一个账号使用。已激活账号下次登录无需再次填写。</text>
+      <button class="beta-primary" bindtap="onActivateTap" loading="{{submitting}}" disabled="{{submitting || checking}}">{{submitting ? '正在激活' : '激活并进入'}}</button>
+    </view>
+    <text wx:if="{{error}}" class="beta-error" aria-role="alert">{{error}}</text>
+    <button wx:if="{{stage === 'error'}}" class="beta-primary" bindtap="onRetryTap" disabled="{{checking}}">重新确认</button>
+  </view>
+  <text class="beta-footer">资格跟随账号保留，请使用同一微信账号登录。</text>
+</view>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:cancel="onProfileAuthCancel" bind:confirm="onProfileAuthConfirm" />

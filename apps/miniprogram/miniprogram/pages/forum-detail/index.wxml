@@ -1,0 +1,38 @@
+<view class="detail-header"><back-header title="帖子" fallback="/pages/forum/index" /></view>
+<view class="forum-detail">
+  <view wx:if="{{loadFailed}}" class="detail-empty"><text>动态暂时读取失败</text><button bindtap="reload">点击重试</button></view>
+  <forum-post-card secondary wx:elif="{{post}}" id="detail-post" post="{{post}}" detail="{{true}}" bind:like="onLikeTap" bind:collect="onCollectTap" bind:repost="onRepostPost" bind:reply="onOpenComposer" />
+  <view wx:else class="detail-empty"><text>这条动态不存在</text><button bindtap="onReturnForum">返回论坛</button></view>
+
+  <block wx:if="{{post && !loadFailed}}">
+    <view class="detail-band"></view>
+    <view id="comments" class="detail-comments">
+      <view class="detail-comments-heading">
+        <text class="detail-comments-title">回复</text>
+        <button class="detail-comment-order" bindtap="onToggleOrder">{{commentOrder === 'hot' ? '按热度' : '按时间'}}</button>
+      </view>
+      <view wx:for="{{comments}}" wx:key="id" class="detail-thread">
+        <forum-comment comment="{{item}}" bind:reply="onReplyTap" bind:like="onCommentLike" bind:expand="onExpandComment" bind:delete="onDeleteComment" />
+        <view wx:if="{{item.replyCount}}" class="detail-replies">
+          <forum-comment wx:for="{{item.replies}}" wx:for-item="reply" wx:key="id" comment="{{reply}}" compact="{{true}}" bind:reply="onReplyTap" bind:like="onCommentLike" bind:expand="onExpandComment" bind:delete="onDeleteComment" />
+          <button wx:if="{{item.replyCount > 1}}" class="detail-expand-replies" data-id="{{item.id}}" bindtap="onExpandReplies">{{item.repliesExpanded ? '收起回复' : '查看全部 ' + item.replyCount + ' 条回复'}}</button>
+        </view>
+      </view>
+      <view wx:if="{{!comments.length}}" class="detail-comment-empty">还没有回复，来说两句吧</view>
+    </view>
+  </block>
+</view>
+
+<view wx:if="{{post && !loadFailed}}" class="detail-composer" style="bottom: {{keyboardHeight}}px; padding-bottom: {{keyboardHeight ? '10px' : 'calc(10px + env(safe-area-inset-bottom))'}};">
+  <block wx:if="{{composerOpen}}">
+    <view class="detail-compose-heading"><text>{{replyTarget ? '回复 ' + replyTarget.name : '发表回复'}}</text><button wx:if="{{replyTarget}}" bindtap="onCancelReply">取消回复</button><button bindtap="onCloseComposer">收起</button></view>
+    <textarea class="detail-comment-input" value="{{commentDraft}}" placeholder="说点什么吧…" maxlength="1000" auto-height focus="{{composerOpen}}" adjust-position="{{false}}" bindinput="onCommentInput" bindkeyboardheightchange="onKeyboardHeightChange" />
+    <view class="detail-compose-actions"><text>{{commentDraft.length}}/1000</text><button class="detail-comment-send" bindtap="onSubmitComment" loading="{{sending}}" disabled="{{sending}}">发送</button></view>
+  </block>
+  <view wx:else class="detail-bottom-row">
+    <image wx:if="{{selfAvatar}}" class="detail-self-avatar" src="{{selfAvatar}}" mode="aspectFill" />
+    <view wx:else class="detail-self-avatar detail-self-letter">{{selfInitial}}</view>
+    <button class="detail-comment-placeholder" bindtap="onOpenComposer">{{commentDraft ? '继续编辑回复…' : '发布你的回复'}}</button>
+  </view>
+</view>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

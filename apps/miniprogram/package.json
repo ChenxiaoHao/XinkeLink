@@ -5,7 +5,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "tsc -p tsconfig.test.json && node --test tests/*.test.cjs",
-    "icons": "node scripts/generate-icons.cjs",
+    "icons": "node scripts/generate-icons.cjs && node scripts/generate-x-icons.cjs",
     "check:project": "node scripts/check-project.cjs",
     "check": "npm run typecheck && npm test && npm run check:project"
   },

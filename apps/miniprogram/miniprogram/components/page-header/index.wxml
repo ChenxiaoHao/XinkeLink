@@ -1,12 +1,1 @@
-<view class="page-header" style="padding-top: {{statusHeight}}px;">
-  <view class="header-row" style="height: {{navigationHeight}}px; padding-right: {{rightSpace}}px;">
-    <view class="header-symbol {{profile ? 'header-symbol--profile' : ''}} {{logoSrc ? 'header-symbol--brand' : ''}}">
-      <image wx:if="{{logoSrc}}" class="header-brand-image" src="{{logoSrc}}" mode="aspectFit" />
-      <image wx:else src="/assets/icons/{{profile ? 'user-round-white' : 'graduation-cap-primary'}}.png" mode="aspectFit" />
-    </view>
-    <view class="header-copy">
-      <text class="header-title">{{title}}</text>
-      <text wx:if="{{subtitle}}" class="header-subtitle">{{subtitle}}</text>
-    </view>
-  </view>
-</view>
+<view class="x-header" style="padding-top:{{statusHeight}}px"><view class="x-toolbar {{left ? 'x-toolbar--left' : ''}}" style="height:{{navigationHeight}}px"><button wx:if="{{!left}}" class="x-avatar-button" bindtap="openDrawer" aria-label="{{loggedIn ? '打开账号侧栏' : '点击登录'}}"><image wx:if="{{loggedIn && avatar}}" class="x-toolbar-avatar" src="{{avatar}}" mode="aspectFill" binderror="onAvatarError"/><view wx:elif="{{loggedIn}}" class="x-toolbar-avatar x-toolbar-letter">{{initial}}</view><view wx:else class="x-toolbar-avatar x-toolbar-guest"><image src="/assets/icons/x-user-round-ink.png"/></view></button><view wx:if="{{searchMode}}" class="x-header-search" style="right:{{rightSpace + 38}}px"><image src="/assets/icons/x-search-ink.png"/><input value="{{query}}" placeholder="搜索" confirm-type="search" bindinput="onInput" bindconfirm="onSubmit" bindfocus="onFocus"/></view><image wx:elif="{{home}}" class="x-wordmark" src="/assets/icons/x-logo-ink.png"/><view wx:else class="x-toolbar-heading"><text class="x-toolbar-title">{{title}}</text><text wx:if="{{badge}}" class="x-toolbar-badge">{{badge}}</text></view><button wx:if="{{action}}" class="x-toolbar-action" style="right:{{rightSpace}}px" bindtap="onAction" aria-label="{{action === 'settings' ? '设置' : action === 'plus' ? '新建对话' : action === 'history' ? '历史' : '更多操作'}}"><image src="/assets/icons/x-{{action}}-ink.png"/></button><view class="x-toolbar-slot" style="right:{{rightSpace}}px"><slot name="right"/></view></view></view>

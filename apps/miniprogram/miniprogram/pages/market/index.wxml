@@ -1,8 +1,0 @@
-<page-header subtitle="Market" />
-<view class="page-content">
-  <view class="page-heading"><text class="page-title">校园二手</text></view>
-  <view class="page-categories">
-    <text class="page-categories__selected">推荐</text><text>数码</text><text>教材</text><text>生活</text><text>服饰</text><text>其他</text>
-  </view>
-  <view class="page-body" />
-</view>

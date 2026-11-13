@@ -1,0 +1,22 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "purpose": "虚构成年学生头像，不对应真实学生",
+  "assets": [
+    {
+      "file": "avatar-lin.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: fictional student profile avatar for a local campus app demonstration. A completely fictional Chinese female university student aged 21, shoulder length black hair, wearing a simple cream cardigan, candid relaxed smile outdoors with softly blurred autumn trees, natural ordinary smartphone head and shoulders photo, slightly imperfect non-studio framing, warm daylight, believable WeChat profile photo. Square composition, face comfortably centered with generous margin for circular cropping. No school uniform, no logos, no text, no badges, no watermark. Not an ID photo, not a glamour portrait, not based on any real individual."
+    },
+    {
+      "file": "avatar-zhou.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: fictional student profile avatar for a local campus app demonstration. A completely fictional Chinese male university student aged 22, short slightly tousled black hair, thin black glasses and a navy sweatshirt, a quiet friendly expression at an outdoor campus reading spot with soft foliage in the background. Natural unretouched smartphone head and shoulders photograph, everyday student style, soft daylight. Square image, face centered with space for circular crop. No uniform, no institution logos, no text, no badges, no watermark. Not an ID or commercial portrait, not based on a real person."
+    },
+    {
+      "file": "avatar-su.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: fictional student avatar for local campus app preview. A completely fictional Chinese female university student aged 20, dark hair loosely tied back with a few natural strands, wearing a muted pale blue casual shirt, smiling slightly while looking toward the camera by a library window. Candid warm smartphone portrait, realistic natural skin and hair, soft background, relaxed ordinary student mood. Square head and shoulders framing with space for round crop, no school branding, no uniform, no text, no badges, no watermark, no beauty filter. Not based on any real individual."
+    },
+    {
+      "file": "avatar-chen.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: fictional student avatar for local campus app preview. A completely fictional Chinese male university student aged 21, short black hair, wearing a simple gray T-shirt and a dark overshirt, casually photographed near an outdoor sports field after exercise, a natural easy smile, soft green background. Everyday smartphone head and shoulders photo, realistic skin and ordinary student look, natural afternoon light. Square image, face centered with circular crop margin. No school logos, no uniform, no text, no certification badge, no watermark. No likeness to a specific real person."
+    }
+  ]
+}

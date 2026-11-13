@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "back-header": "/components/back-header/index",
+    "forum-post-card": "/components/forum-post-card/index",
+    "forum-comment": "/components/forum-comment/index"
+  }
+}

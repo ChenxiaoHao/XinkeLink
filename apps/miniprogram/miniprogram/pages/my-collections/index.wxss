@@ -1,0 +1,18 @@
+/* 「喜欢」页（原书签页并入）：X 风格 —— 20/800 标题 + 15 灰说明 + 帖子卡片流。
+   原先 @import bookmarks 页样式，该页已删除，这里内联同样的类名口径。 */
+page { background:#fff; color:#0f1419; }
+.bookmark-page { min-height:100vh; padding:0 0 calc(32px + env(safe-area-inset-bottom)); }
+
+.bookmark-intro { display:flex; flex-direction:column; gap:4px; padding:16px 16px 12px; }
+.bookmark-title { font-size:20px; font-weight:800; color:#0f1419; }
+.bookmark-copy { font-size:15px; line-height:20px; color:#536471; }
+
+.bookmark-empty { display:flex; flex-direction:column; align-items:center; gap:6px; padding:72px 32px; text-align:center; }
+.bookmark-empty-title { font-size:17px; font-weight:700; color:#0f1419; }
+.bookmark-action { min-width:0; margin:16px 0 0 !important; padding:0 24px; height:36px; border-radius:18px; background:#0f1419; color:#fff; font-size:15px; font-weight:700; line-height:36px; }
+
+/* tablet-scale:begin */
+@media (min-width: 500px) {
+  .bookmark-page { max-width:460px; margin:0 auto; }
+}
+/* tablet-scale:end */

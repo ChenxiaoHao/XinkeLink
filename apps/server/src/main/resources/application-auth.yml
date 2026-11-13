@@ -1,0 +1,32 @@
+xinkelink:
+  storage:
+    provider: ${XINKELINK_IMAGE_STORAGE:local}
+  auth:
+    jwt:
+      secret-base64: ${XINKELINK_JWT_SECRET_BASE64}
+      issuer: xinkelink
+    wechat:
+      app-id: ${XINKELINK_WECHAT_APP_ID:}
+      app-secret: ${XINKELINK_WECHAT_APP_SECRET:}
+    admin:
+      allowed-origins: ${XINKELINK_ADMIN_ALLOWED_ORIGINS:}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 11MB
+      max-request-size: 12MB
+  data:
+    redis:
+      host: ${XINKELINK_REDIS_HOST:127.0.0.1}
+      port: ${XINKELINK_REDIS_PORT:16379}
+      password: ${XINKELINK_REDIS_PASSWORD:}
+      connect-timeout: 2s
+      timeout: 2s
+
+logging:
+  level:
+    cn.xinkelink.auth.persistence: WARN
+    org.springframework.web.client: WARN
+    cn.xinkelink.media.persistence: WARN
+    com.aliyun.oss: OFF

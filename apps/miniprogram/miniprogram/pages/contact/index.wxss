@@ -1,0 +1,32 @@
+/* 私信：搜索与「全部/未读」放在同一行，避开微信胶囊；会话行头像 48、预览 15。
+   数值口径 375 基准 px。 */
+.inbox-header { position:sticky; top:0; z-index:20; background:#fff; }
+.inbox-tools { display:flex; align-items:center; padding:0 16px 8px; }
+.inbox-search { display:flex; align-items:center; gap:10px; flex:1; min-width:0; height:42px; padding:0 14px; border-radius:21px; background:#eff3f4; }
+.inbox-search image { flex:none; width:18px; height:18px; }
+.inbox-search input { flex:1; min-width:0; color:#0f1419; font-size:15px; }
+.inbox-dropdown { display:flex; align-items:center; justify-content:center; gap:4px; flex:none; width:auto; min-width:0; height:34px; margin:0; padding:0 12px; border:1px solid #cfd9de; border-radius:17px; background:#fff; color:#0f1419; font-size:15px; font-weight:500; }
+.inbox-dropdown image { width:15px; height:15px; }
+.inbox-dropdown:active { background:#f7f9f9; }
+
+.inbox-body { min-height:calc(100vh - 160px); padding-bottom:calc(88px + env(safe-area-inset-bottom)); }
+
+.conversation-row { display:flex; align-items:flex-start; gap:12px; padding:12px 16px; background:#fff; }
+.conversation-row:active { background:#f7f9f9; }
+.conversation-avatar { flex:none; width:48px; height:48px; border-radius:50%; background:#eff3f4; }
+.conversation-text { flex:1; min-width:0; }
+.conversation-top { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.conversation-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#0f1419; font-size:15px; font-weight:700; line-height:20px; }
+.conversation-time { flex:none; color:#536471; font-size:13px; line-height:18px; }
+.conversation-preview { display:block; margin-top:2px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:#536471; font-size:15px; line-height:20px; }
+.conversation-dot { flex:none; width:8px; height:8px; margin-top:21px; border-radius:50%; background:#0f1419; }
+
+.inbox-empty { position:absolute; top:42%; left:16px; right:16px; display:flex; flex-direction:column; align-items:center; transform:translateY(-50%); text-align:center; }
+.inbox-empty-icon { width:64px; height:64px; margin-bottom:16px; }
+.inbox-empty-title { color:#0f1419; font-size:20px; font-weight:800; line-height:26px; }
+.inbox-empty-copy { margin-top:8px; color:#536471; font-size:15px; line-height:20px; }
+.inbox-empty-action { width:max-content; min-width:0; margin:20px auto 0 !important; padding:0 20px; height:36px; border-radius:18px; background:#0f1419; color:#fff; font-size:15px; font-weight:700; line-height:36px; }
+
+@media (min-width: 500px) {
+  .inbox-body { min-height:auto; }
+}

@@ -1,0 +1,26 @@
+<view class="chat-header">
+  <back-header fallback="/pages/contact/index" bind:layout="onHeaderLayout" />
+  <button class="chat-peer-title" style="right: calc({{headerRightSpace || 104}}px + 44px)" bindtap="onPeerTap" disabled="{{!peer}}" aria-label="{{peer ? '查看' + peer.nickname + '的主页' : '校园私信'}}">{{peer ? peer.nickname : '校园私信'}}</button>
+  <button class="chat-settings-entry" style="right: {{headerRightSpace || 104}}px" bindtap="onSettingsTap" disabled="{{!peer}}" aria-label="聊天设置"><image src="/assets/icons/ellipsis-muted.png" /></button>
+</view>
+<view wx:if="{{loadFailed}}" class="chat-state"><image class="chat-state-icon" src="/assets/icons/message-square-text-muted.png" mode="aspectFit" /><text class="chat-state-title">私信暂时未能加载</text><text class="chat-state-copy">已有消息和未发送的文字会保留</text><button class="chat-state-action" bindtap="onRetryTap">重新加载</button></view>
+<view wx:elif="{{missing}}" class="chat-state"><image class="chat-state-icon" src="/assets/icons/messages-square-muted.png" mode="aspectFit" /><text class="chat-state-title">暂时无法打开这段私信</text><text class="chat-state-copy">对方账号暂时不可用</text><button class="chat-state-action" bindtap="onContactTap">返回联系</button></view>
+<view wx:else class="contact-chat" style="height: calc(100vh - {{headerHeight + keyboardHeight}}px);">
+  <scroll-view class="chat-messages" bindscrolltoupper="onScrollToUpper" scroll-y scroll-with-animation scroll-into-view="{{failedText ? 'failed-message' : scrollTo}}">
+    <view wx:if="{{!messages.length}}" class="chat-empty"><image wx:if="{{peer}}" class="chat-empty-avatar" src="{{peer.avatar}}" data-owner="peer" data-source="{{peer.avatar}}" binderror="onChatAvatarError" mode="aspectFill" bindtap="onPeerTap" /><text class="chat-empty-title">和{{peer.nickname}}打个招呼吧</text><text class="chat-empty-copy">从一句友好的问候，开始校园交流</text></view>
+    <block wx:for="{{messages}}" wx:key="id">
+      <view wx:if="{{item.showTime}}" class="chat-date">{{item.timeText}}</view>
+      <view id="message-{{item.id}}" class="chat-message {{item.fromSelf ? 'chat-message--self' : ''}}">
+        <image wx:if="{{!item.fromSelf}}" class="chat-avatar" src="{{peer.avatar}}" mode="aspectFill" bindtap="onPeerTap" binderror="onChatAvatarError" data-owner="peer" data-source="{{peer.avatar}}" role="button" aria-label="{{'查看' + peer.nickname + '的主页'}}" />
+        <image wx:else class="chat-avatar" src="{{selfAvatar}}" mode="aspectFill" binderror="onChatAvatarError" data-owner="self" data-source="{{selfAvatar}}" aria-label="{{selfNickname + '的头像'}}" />
+        <view class="chat-message-content"><text class="chat-sender-name">{{item.fromSelf ? selfNickname : peer.nickname}}</text><text class="chat-bubble" user-select>{{item.text}}</text><text wx:if="{{item.fromSelf && index === messages.length - 1}}" class="chat-send-status">已发送</text></view>
+      </view>
+    </block>
+    <view wx:if="{{failedText}}" id="failed-message" class="chat-message chat-message--self chat-message--failed"><image class="chat-avatar" src="{{selfAvatar}}" mode="aspectFill" binderror="onChatAvatarError" data-owner="self" data-source="{{selfAvatar}}" /><view class="chat-message-content"><text class="chat-sender-name">{{selfNickname}}</text><text class="chat-bubble" user-select>{{failedText}}</text><button class="chat-retry-send" bindtap="onRetrySendTap">未保存 · 点击重试</button></view></view>
+  </scroll-view>
+    <view wx:if="{{readStateFailed}}" class="chat-read-warning" bindtap="onRetryTap" role="button">已读状态未保存，点击重试；历史消息仍可查看</view>
+    <view wx:if="{{blockedReason}}" class="chat-blocked">{{blockedReason}}</view>
+  <view wx:if="{{sending}}" class="chat-send-progress">发送中…</view>
+  <view class="chat-composer" style="{{keyboardHeight ? 'padding-bottom:12rpx;' : ''}}"><input class="chat-input" value="{{input}}" placeholder="{{sending ? '发送中…' : canSend ? '发送消息…' : '暂时无法发送消息'}}" maxlength="1000" disabled="{{!canSend || sending}}" adjust-position="{{false}}" confirm-type="send" bindinput="onMessageInput" bindconfirm="onSendTap" bindkeyboardheightchange="onKeyboardHeightChange" /><button class="chat-send" bindtap="onSendTap" disabled="{{!input || !canSend || sending}}" aria-label="发送消息"><image src="/assets/icons/arrow-up-white.png" mode="aspectFit" /></button></view>
+</view>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

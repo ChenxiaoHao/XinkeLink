@@ -24,9 +24,9 @@ export const MOCK_POSTS: readonly MockPost[] = [
     images: [image('tablet')], likes: 8, comments: 4,
   },
   {
-    id: 'post-003', category: 'study', author: author('mock-zhou', '周同学', 'avatar-zhou'),
+    id: 'post-003', category: 'secondhand', author: author('mock-zhou', '周同学', 'avatar-zhou'),
     createdAt: minutesAgo(35), recommendation: 98,
-    content: '把这周的高数笔记整理好了。先梳理公式，再做错题，复习起来清楚多了。大家也可以分享自己的学习方法。',
+    content: '高数笔记整理好了，连同上学期的旧教材一起出给需要的同学。先梳理公式再做错题的复习方法也写在里面了，需要的私聊我。',
     images: [image('desk'), image('book')], likes: 16, comments: 6,
   },
   {
@@ -49,9 +49,9 @@ export const MOCK_POSTS: readonly MockPost[] = [
     images: [], likes: 11, comments: 2,
   },
   {
-    id: 'post-007', category: 'study', author: author('mock-tang', '唐果'),
+    id: 'post-007', category: 'complain', author: author('mock-tang', '唐果'),
     createdAt: minutesAgo(95), recommendation: 94,
-    content: '今天的阅读和摘抄完成啦。每天留一点时间给自己，慢慢积累也会有收获。',
+    content: '吐槽一下：自习室明明写着保持安静，总有人外放视频还大声打电话。耳机不贵，素质免费，大家互相体谅一下。',
     images: [image('book'), image('desk'), image('library')], likes: 19, comments: 5,
   },
   {
@@ -73,9 +73,9 @@ export const MOCK_POSTS: readonly MockPost[] = [
     images: [image('book'), image('library'), image('desk'), image('book')], likes: 5, comments: 2,
   },
   {
-    id: 'post-011', category: 'study', author: author('mock-wen', '温言'),
+    id: 'post-011', category: 'buddy', author: author('mock-wen', '温言'),
     createdAt: minutesAgo(210), recommendation: 90,
-    content: '今天完成了一个小练习，把不懂的地方逐个记下来再解决。学习路上一起加油。',
+    content: '找搭子：晚上七点操场慢跑，想坚持每天三公里。有没有同学一起？互相监督，跑完各自回宿舍。',
     images: [image('desk')], likes: 12, comments: 3,
   },
   {

@@ -4,12 +4,13 @@ const { loadPage } = require('./page-harness.cjs');
 
 function forum(overrides = {}) {
   const saved = new Map();
-  const calls = { stopped: 0, messages: [] };
+  const calls = { stopped: 0, messages: [], routes: [] };
   const wx = {
     getStorageSync: key => saved.get(key),
     setStorageSync: (key, value) => saved.set(key, value),
     stopPullDownRefresh: () => calls.stopped++,
     showToast: options => calls.messages.push(options.title),
+    navigateTo: options => calls.routes.push(options.url), switchTab: options => calls.routes.push(options.url),
     ...overrides,
   };
   const page = loadPage('pages/forum/index.js', { wx });
@@ -46,17 +47,16 @@ test('a failed local save leaves the previous interaction visible', () => {
   assert.equal(calls.messages.length, 1);
 });
 
-test('the search entry filters current mock posts without navigating', () => {
-  const { page } = forum({ showModal: options => options.success({ confirm: true, content: 'iPad' }) });
+test('the forum search entry opens the shared search page for posts', () => {
+  const { page, calls } = forum();
   page.onSearchTap();
-  assert.equal(page.data.posts.length, 1);
-  assert.equal(page.data.posts[0].id, 'post-002');
+  assert.deepEqual(calls.routes, ['/pages/search/index']);
 });
 
-test('anonymous sharing returns to the home feed without identifying its author', () => {
+test('anonymous sharing opens the detail without identifying its author', () => {
   const { page } = forum();
   const share = page.onShareAppMessage({ from: 'button', target: { dataset: { postId: 'post-002' } } });
-  assert.equal(share.path, '/pages/forum/index?postId=post-002');
+  assert.equal(share.path, '/pages/forum-detail/index?id=post-002');
   assert.ok(share.title.includes('iPad'));
   assert.equal(JSON.stringify(share).includes('private-author'), false);
 });

@@ -1,0 +1,21 @@
+<view class="chat-settings-header"><back-header title="聊天设置" /></view>
+<view wx:if="{{loadFailed}}" class="chat-settings-state"><text>聊天设置暂时无法读取</text><button bindtap="onRetryTap">重新加载</button></view>
+<view wx:else class="chat-settings-page">
+  <view class="chat-settings-peer" wx:if="{{peer}}"><image src="{{peer.avatar}}" mode="aspectFill" /><view class="chat-settings-peer-copy"><text>{{peer.nickname}}</text><text>{{peer.bio}}</text><text>用户自填，未经平台核实</text></view><image class="chat-settings-chevron" src="/assets/icons/chevron-right-muted.png" /></view>
+  <text class="chat-settings-section">通知与关联</text>
+  <view class="chat-settings-card">
+    <view class="chat-setting-row"><view class="chat-setting-icon"><image src="/assets/icons/messages-square-muted.png" /></view><text class="chat-setting-label">消息免打扰</text><switch color="#222223" checked="{{preferences.muted}}" data-key="muted" bindchange="onPreferenceChange" disabled="{{busy}}" /></view>
+    <view class="chat-setting-row"><view class="chat-setting-icon"><image src="/assets/icons/arrow-up-primary.png" /></view><text class="chat-setting-label">置顶聊天</text><switch color="#222223" checked="{{preferences.pinned}}" data-key="pinned" bindchange="onPreferenceChange" disabled="{{busy}}" /></view>
+  </view>
+  <text class="chat-settings-section">记录与安全</text>
+  <view class="chat-settings-card">
+    <button class="chat-setting-row chat-setting-button" bindtap="onFindHistoryTap"><view class="chat-setting-icon"><image src="/assets/icons/search-primary.png" /></view><text class="chat-setting-label">查找聊天记录</text><image class="chat-settings-chevron" src="/assets/icons/chevron-right-muted.png" /></button>
+    <view wx:if="{{historyOpen}}" class="chat-history-search"><view class="chat-history-input"><image src="/assets/icons/search-primary.png" /><input value="{{historyQuery}}" placeholder="搜索聊天记录" bindinput="onHistoryInput" /></view><view wx:if="{{historyQuery && !historyMatches.length}}" class="chat-history-empty">没有找到匹配的消息</view><button wx:for="{{historyMatches}}" wx:key="id" class="chat-history-result" data-id="{{item.id}}" bindtap="onHistoryMessageTap"><text>{{item.text}}</text><image src="/assets/icons/chevron-right-muted.png" /></button></view>
+    <button class="chat-setting-row chat-setting-button" bindtap="onClearHistoryTap" disabled="{{busy}}"><view class="chat-setting-icon"><image src="/assets/icons/archive-muted.png" /></view><text class="chat-setting-label">清空聊天记录</text><text class="chat-setting-note">本人记录</text><image class="chat-settings-chevron" src="/assets/icons/chevron-right-muted.png" /></button>
+    <view class="chat-setting-row"><view class="chat-setting-icon chat-setting-icon--danger"><image src="/assets/icons/shield-check-primary.png" /></view><view class="chat-setting-copy"><text class="chat-setting-label">屏蔽此人</text><text>屏蔽后将无法向对方发送私信</text></view><switch color="#222223" checked="{{preferences.blocked}}" data-key="blocked" bindchange="onPreferenceChange" disabled="{{busy}}" /></view>
+    <button class="chat-setting-row chat-setting-button" bindtap="onReportTap"><view class="chat-setting-icon chat-setting-icon--danger"><image src="/assets/icons/megaphone-primary.png" /></view><view class="chat-setting-copy"><text class="chat-setting-label">举报该用户</text><text>举报资料或交流内容</text></view><image class="chat-settings-chevron" src="/assets/icons/chevron-right-muted.png" /></button>
+  </view>
+  <view class="chat-settings-tip"><image src="/assets/icons/shield-check-primary.png" /><text>校园交流倡导文明友善。如遇骚扰、诈骗或私下转账，请保留证据并通过平台举报。</text></view>
+  <text class="chat-settings-local">设置仅影响本人，清空记录不影响对方。</text>
+</view>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

@@ -1,2 +1,3 @@
-import { defineTabPage } from '../../utils/navigation'
-defineTabPage('contact')
+import {registerPage} from '../../backend/pages'
+import {inbox} from '../contact/controller'
+registerPage(wx,Page,'contact')(inbox('messages',wx))

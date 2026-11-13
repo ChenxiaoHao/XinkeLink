@@ -1,4 +1,5 @@
-import { FeedCategory, ForumInteractions, ForumPostView, MockPost, PostInteraction } from './types'
+import { FeedCategory, ForumInteractions, ForumPostView, MockPost, PostInteraction, LOCAL_AUTHOR_ID } from './types'
+import { detailStamp } from '../../utils/presentation'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -8,16 +9,16 @@ export function normalizeInteractions(value: unknown): ForumInteractions {
   const result: ForumInteractions = { version: 1, posts: {} }
   if (!isRecord(value) || value.version !== 1 || !isRecord(value.posts)) return result
   for (const [id, entry] of Object.entries(value.posts)) {
-    if (!/^post-\d{3}$/.test(id) || !isRecord(entry)) continue
+    if (!/^(post-\d{3}|local-post-[a-z0-9-]+)$/.test(id) || !isRecord(entry)) continue
     if (typeof entry.liked === 'boolean' && typeof entry.collected === 'boolean') {
-      result.posts[id] = { liked: entry.liked, collected: entry.collected }
+      result.posts[id] = { liked: entry.liked, collected: entry.collected, reposted: entry.reposted === true }
     }
   }
   return result
 }
 
 function interactionFor(post: MockPost, state: ForumInteractions): PostInteraction {
-  return state.posts[post.id] ?? { liked: false, collected: post.initiallyCollected ?? false }
+  return state.posts[post.id] ?? { liked: false, collected: post.initiallyCollected ?? false, reposted: false }
 }
 
 export function toggleInteraction(
@@ -43,13 +44,16 @@ export function toPostView(post: MockPost, state: ForumInteractions): ForumPostV
   // Explicit projection prevents private author fields leaking into setData/share.
   return {
     id: post.id, category: post.category,
+    ...(!post.anonymousNumber ? { authorId: post.author.id } : {}),
     authorName: post.anonymousNumber ? '匿名同学 ' + post.anonymousNumber : post.author.nickname,
     avatar: post.anonymousNumber ? '/assets/icons/user-round-muted.png' : post.author.avatar,
-    isAnonymous: Boolean(post.anonymousNumber), timeLabel: timeLabel(post.createdAt),
+    isAnonymous: Boolean(post.anonymousNumber), isMine: post.author.id === LOCAL_AUTHOR_ID,
+    timeLabel: timeLabel(post.createdAt), stamp: detailStamp(post.createdAt),
     content: post.content, images: [...post.images],
     imageLayout: count === 0 ? 'none' : count === 1 ? 'single' : count === 2 ? 'double' : count === 4 ? 'quad' : 'grid',
-    liked: current.liked, collected: current.collected,
+    liked: current.liked, collected: current.collected, reposted: current.reposted,
     likeCount: post.likes + (current.liked ? 1 : 0), commentCount: post.comments,
+    repostCount: (post.reposts ?? 0) + (current.reposted ? 1 : 0),
   }
 }
 

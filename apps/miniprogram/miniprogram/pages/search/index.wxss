@@ -1,0 +1,43 @@
+/* 搜索页默认态 = 最近搜索 + 热榜（当周点赞前 5），字体口径对齐 X 的 Trends。
+   搜索仍是真功能：输入关键词提交后进入结果态。 */
+.explore-header { position:sticky; top:0; background:#fff; z-index:20; }
+.explore-body { padding:0 0 calc(85px + env(safe-area-inset-bottom)); min-height:70vh; }
+.x-band { height:8px; background:#eff3f4; }
+
+/* 最近搜索：区块标题 20/800，右侧「全部清除」15 蓝字。 */
+.recent-head { display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 16px; box-sizing:border-box; }
+.recent-title { font-size:20px; font-weight:800; color:#0f1419; }
+.recent-clear { padding:0; margin:0; background:transparent; color:#0f1419; font-size:15px; line-height:1; }
+.recent-row { display:flex; align-items:center; gap:14px; padding:0 16px 0 14px; }
+.recent-row--pressed { background:#f7f9f9; }
+.recent-icon { width:18px; height:18px; flex:none; opacity:.6; }
+.recent-text { flex:1; min-width:0; padding:15px 0; font-size:15px; line-height:20px; color:#0f1419; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.recent-remove { display:flex; align-items:center; justify-content:center; width:30px; min-width:30px; height:30px; padding:0; margin:0; background:transparent; border-radius:50%; }
+.recent-remove image { width:16px; height:16px; opacity:.45; }
+
+/* 热榜标题条 */
+.trends-head { display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 16px; border-bottom:1px solid #eff3f4; box-sizing:border-box; }
+.trends-title { font-size:20px; font-weight:800; color:#0f1419; }
+.trends-note { font-size:13px; color:#536471; }
+
+/* 榜行 = X Trends：上行「1 · 校园生活」13 灰，中行标题 15/700，下行赞数 13 灰，右侧 ⋯ */
+.trend { display:flex; align-items:flex-start; gap:12px; padding:12px 12px 12px 16px; }
+.trend--pressed { background:#f7f9f9; }
+.trend-copy { flex:1; min-width:0; display:flex; flex-direction:column; }
+.trend-context { font-size:13px; line-height:16px; color:#536471; }
+.trend-name { margin-top:2px; font-size:15px; line-height:20px; font-weight:700; color:#0f1419; word-break:break-word; }
+.trend-meta { margin-top:4px; font-size:13px; line-height:16px; color:#536471; font-variant-numeric:tabular-nums; }
+.trend-more { width:18px; height:18px; flex:none; margin-top:8px; opacity:.8; }
+
+.x-load { padding:48px 24px; color:#536471; text-align:center; font-size:15px; line-height:1.5; }
+.x-load text { display:block; margin-bottom:8px; }
+.x-load button { margin-top:16px; height:36px; padding:0 20px; background:#0f1419; color:#fff; border-radius:18px; font-size:15px; font-weight:700; line-height:36px; }
+.search-more { background:#fff; color:#0f1419; font-size:14px; border-radius:0; }
+
+/* tablet-scale:begin */
+@media (min-width: 500px) {
+  .recent-title, .trends-title { font-size:20px; }
+  .recent-row, .trend { padding-left:16px; }
+  .explore-body { padding-bottom:calc(85px + env(safe-area-inset-bottom)); }
+}
+/* tablet-scale:end */

@@ -1,0 +1,30 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "purpose": "本地校园内容与闲置商品演示；AI生成，不是真实校区或商品照片",
+  "assets": [
+    {
+      "name": "campus-evening.png",
+      "prompt": "Use case: photorealistic-natural. Asset: a campus community post photo, not a UI. Natural smartphone photograph of a contemporary university campus in inland China in late October, brick and pale stone teaching buildings reflected in warm sunset light, a tree-lined pedestrian walkway with golden ginkgo leaves, a few distant students seen only from behind. Candid everyday student photography, realistic texture, slightly imperfect framing, soft misty blue shadows, calm Japanese minimal feeling. Landscape 4:3 composition. No identifiable real campus, no legible signs, no institutional logos, no identifiable faces, no captions, no watermark, no cards or borders. Deliver one complete photograph."
+    },
+    {
+      "name": "library-notes.png",
+      "prompt": "Use case: photorealistic-natural. Asset: a campus student post photo. Realistic smartphone photograph of a university library study desk beside a window in autumn afternoon light, an open notebook with small indistinct handwritten diagrams and formulas, a pen, a closed neutral cover textbook and a plain cream mug, distant bookshelves softly out of focus. Quiet, warm, unstyled and believable everyday student life, slightly imperfect composition and natural textures. Landscape 4:3. No readable personal details, no logos, no watermark, no text overlay, no collage, no UI. Deliver one complete photograph."
+    },
+    {
+      "name": "keyboard.png",
+      "prompt": "Use case: photorealistic-natural. Asset: campus second-hand listing photo. A believable used compact 75 percent mechanical keyboard, pale gray and off-white keycaps, dark gray case, slightly visible ordinary wear, on a clean light wood dormitory desk beside a softly blurred laptop edge. The entire keyboard is visible, oblique overhead smartphone camera, natural soft window daylight, honest student resale snapshot rather than glossy advertising, warm muted colors. Landscape 4:3. No brand name or logo, no price tags, no caption, no watermark, no UI, no hands, no collage. Deliver one complete product photograph."
+    },
+    {
+      "name": "textbooks.png",
+      "prompt": "Use case: photorealistic-natural. Asset: campus second-hand listing photo. Two gently used university mathematics textbooks and a slim blue practice notebook stacked on a light wood desk, one book slightly open showing indistinct mathematical formulas, visible modest wear and a few pencil annotations, simple unbranded blue and ivory covers without legible title text, classroom bookshelf softly blurred behind. Natural smartphone photo for a student selling used books, soft daylight, realistic paper texture, ordinary and candid rather than commercial. Landscape 4:3. No brand, no title text, no price label, no text overlay, no watermark, no collage or UI. Deliver one complete photograph."
+    },
+    {
+      "name": "desk-lamp.png",
+      "prompt": "Use case: photorealistic-natural. Asset: campus second-hand listing photo. An unbranded small white adjustable LED desk lamp, round base and gently angled slender neck, switched off on a clean light wood dorm study desk, USB cable loosely coiled beside it, a notebook at the edge, real plastic texture and subtle signs of use, pale wall background. Simple natural student smartphone resale photograph, soft side daylight, neutral warm-white and misty blue colors, entire object visible. Landscape 4:3. No logos, no text overlay, no watermark, no price, no collage, no UI. Deliver one complete photograph."
+    },
+    {
+      "name": "badminton.png",
+      "prompt": "Use case: photorealistic-natural. Asset: campus second-hand listing photo. Two lightly used unbranded badminton rackets with navy and muted blue frames, clean strings, slightly worn black grips, and a single white shuttlecock on a pale wood gym bench near a university sports court, no people. Natural smartphone photograph, realistic material details, soft afternoon light, simple authentic student second-hand listing. Landscape 4:3, both rackets fully within the frame. No logos, no text, no watermark, no prices, no collage, no UI. Deliver one complete photograph."
+    }
+  ]
+}

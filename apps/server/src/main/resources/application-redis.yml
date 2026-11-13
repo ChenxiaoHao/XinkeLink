@@ -1,0 +1,13 @@
+spring:
+  data:
+    redis:
+      host: ${XINKELINK_REDIS_HOST:127.0.0.1}
+      port: ${XINKELINK_REDIS_PORT:16379}
+      password: ${XINKELINK_REDIS_PASSWORD:}
+      connect-timeout: 2s
+      timeout: 2s
+
+management:
+  health:
+    redis:
+      enabled: true

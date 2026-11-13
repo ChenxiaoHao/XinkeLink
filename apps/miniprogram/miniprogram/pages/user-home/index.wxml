@@ -1,0 +1,49 @@
+<view class="user-home">
+  <view class="user-cover">
+    <view class="user-nav" style="padding-top:{{statusHeight}}px; padding-right:{{rightSpace}}px;">
+      <button class="user-nav-button" bindtap="onBack" aria-label="返回"><image src="/assets/icons/x-chevron-left-white.png" mode="aspectFit" /></button>
+    </view>
+  </view>
+
+  <view wx:if="{{loadFailed}}" class="user-state">
+    <text class="user-state-title">个人主页暂时无法查看</text>
+    <text class="user-state-copy">用户可能不存在，或网络暂时不可用。</text>
+    <button class="user-state-action" bindtap="reload">重新读取</button>
+  </view>
+
+  <block wx:elif="{{profile}}">
+    <view class="user-identity">
+      <image class="user-avatar" src="{{profile.avatar}}" data-kind="profile" data-source="{{profile.avatar}}" binderror="onRemoteAvatarError" mode="aspectFill" />
+      <text class="user-name">{{profile.nickname}}</text>
+      <text wx:if="{{profile.major || profile.className || profile.year}}" class="user-meta">{{profile.major}}{{profile.className ? (profile.major ? ' · ' : '') + profile.className : ''}}{{profile.year ? ((profile.major || profile.className) ? ' · ' : '') + profile.year + '级' : ''}}</text>
+      <text class="user-bio">{{profile.bio || '还没有填写个人简介'}}</text>
+      <view class="user-stats">
+        <view class="user-stat"><text class="user-stat-number">{{profile.posts.length}}</text><text class="user-stat-unit">条公开帖子</text></view>
+        <view class="user-stat"><text class="user-stat-number">{{profile.likeCount}}</text><text class="user-stat-unit">次获赞</text></view>
+      </view>
+      <view class="user-actions">
+        <button class="user-action" open-type="share">分享个人资料</button>
+        <!-- 访客看自己的公开主页没有「编辑」入口：未登录没有可编辑的身份。 -->
+        <button wx:if="{{profile.isSelf && loggedIn}}" class="user-action" bindtap="onEditTap">编辑个人资料</button>
+        <button wx:if="{{!profile.isSelf}}" class="user-action" bindtap="onMessageTap">私信</button>
+      </view>
+    </view>
+
+    <view wx:if="{{profile.isSelf}}" class="user-preview">这是其他同学可见的主页，匿名帖子不会展示在此。</view>
+
+    <view class="user-tabs">
+      <button class="user-tab user-tab--active"><text>帖子</text><view class="user-tab-underline"></view></button>
+    </view>
+
+    <view wx:for="{{profile.posts}}" wx:key="id" class="user-post">
+      <forum-post-card home post="{{item}}" bind:open="onOpenPost" bind:like="onLikePost" bind:repost="onRepostPost" bind:collect="onCollectPost" />
+    </view>
+
+    <view wx:if="{{!profile.posts.length}}" class="user-state">
+      <text class="user-state-title">暂无公开帖子</text>
+      <text class="user-state-copy">校园里的美好，等待慢慢记录。</text>
+    </view>
+    <view wx:else class="user-end">你已看到底啦</view>
+  </block>
+</view>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

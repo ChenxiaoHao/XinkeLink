@@ -1,0 +1,44 @@
+.back-header { background: #FFF; }
+.back-header-row { display: flex; align-items: center; gap: 8rpx; box-sizing: border-box; padding-left: 12rpx; border-bottom: 1rpx solid #EDF0F3; }
+.back-header-row .back-header-button { display: flex; align-items: center; justify-content: center; flex: none; width: 44px; min-width: 44px; height: 44px; padding: 0; margin: 0; border-radius: 12rpx; background: transparent; }
+.back-header-button image { width: 36rpx; height: 36rpx; }
+.back-header-title { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 32rpx; font-weight: 600; }
+.back-header-row .back-header-action { flex: none; width: auto; min-width: 48px; height: 44px; padding: 0 20rpx; margin: 0; border-radius: 16rpx; background: var(--xlk-color-primary-strong); color: #FFF; font-size: 28rpx; font-weight: 500; line-height: 44px; }
+.back-header-action[disabled] { opacity: .6; }
+.back-header-button:active { background: #F1F4F8; }
+.back-header-action:active { transform: scale(.97); }
+
+/* 二级页面延续已确认首页的黑白层级；保留原生胶囊的几何避让。 */
+.back-header { background: #F7F7FA; color: #202021; }
+.back-header-row { border-bottom: 0; }
+.back-header-button image { filter: brightness(0); }
+.back-header-title { font-size: 32rpx; font-weight: 650; }
+.back-header-row .back-header-action { height: 72rpx; min-width: 92rpx; padding: 0 24rpx; border-radius: 40rpx; background: #222223; font-size: 26rpx; line-height: 72rpx; }
+
+@media (min-width: 500px) {
+  .back-header-row { max-width: 460px; margin: 0 auto; padding-left: 6px; gap: 4px; }
+  .back-header-button image { width: 20px; height: 20px; }
+  .back-header-title { font-size: 16px; }
+  .back-header-row .back-header-action { height: 36px; min-width: 48px; padding: 0 12px; border-radius: 20px; font-size: 14px; line-height: 36px; }
+}
+
+/* tablet-scale:begin */
+@media (min-width: 500px) {
+.back-header-row { gap: 4px; padding-left: 6px; border-bottom: 0.5px solid #EDF0F3; }
+.back-header-row .back-header-button { width: 44px; min-width: 44px; height: 44px; padding: 0; border-radius: 6px; }
+.back-header-button image { width: 18px; height: 18px; }
+.back-header-title { min-width: 0; font-size: 16px; }
+.back-header-row .back-header-action { width: auto; min-width: 48px; height: 44px; padding: 0 10px; border-radius: 8px; font-size: 14px; line-height: 44px; }
+.back-header-row { border-bottom: 0; }
+.back-header-title { font-size: 16px; }
+.back-header-row .back-header-action { height: 36px; min-width: 46px; padding: 0 12px; border-radius: 20px; font-size: 13px; line-height: 36px; }
+}
+@media (min-width: 500px) {
+  .back-header-row { max-width: 460px; margin: 0 auto; padding-left: 6px; gap: 4px; }
+  .back-header-button image { width: 20px; height: 20px; }
+  .back-header-title { font-size: 16px; }
+  .back-header-row .back-header-action { height: 36px; min-width: 48px; padding: 0 12px; border-radius: 20px; font-size: 14px; line-height: 36px; }
+}
+/* tablet-scale:end */
+
+.back-header { background:#fff; color:#0f1419; }.back-header-row { border-bottom:1px solid #eff3f4; }.back-header-title { font-size:18px; font-weight:800; }.back-header-row .back-header-action { background:#0f1419; color:#fff; border-radius:24px; font-size:14px; }.back-header-button { border-radius:50%; }

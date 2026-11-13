@@ -1,0 +1,14 @@
+<view wx:if="{{mounted}}" class="auth-overlay {{opened ? 'auth-overlay--open' : ''}}" catchtap="onCancel" catchtouchmove="stopTap">
+  <view class="auth-sheet" catchtap="stopTap" aria-role="dialog" aria-label="微信头像和昵称确认">
+    <view class="auth-handle" />
+    <view class="auth-heading"><image class="auth-brand" src="/assets/brand/xinkelink-mark.png" mode="aspectFit" /><text>完善个人资料</text><button class="auth-close" bindtap="onCancel" disabled="{{busy}}" aria-label="关闭"><image src="/assets/icons/x-muted.png" /></button></view>
+    <text class="auth-description">选择头像并确认昵称，用于信科 Link 的个人资料展示</text>
+    <form bindsubmit="onConfirm">
+      <view class="auth-row"><text>头像</text><button class="auth-avatar" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar" disabled="{{busy}}"><image src="{{avatarPath || '/assets/icons/user-round-muted.png'}}" mode="aspectFill" /><text>{{avatarPath ? '更换头像' : '选择微信头像'}}</text><image class="auth-arrow" src="/assets/icons/chevron-right-muted.png" /></button></view>
+      <view class="auth-row"><label for="auth-nickname">昵称</label><input id="auth-nickname" name="nickname" type="nickname" placeholder="点击填写微信昵称" maxlength="20" disabled="{{busy}}" /></view>
+      <text wx:if="{{error}}" class="auth-error">{{error}}</text>
+      <button class="auth-confirm" form-type="submit" loading="{{busy}}" disabled="{{busy}}">{{busy ? '正在保存' : '确认并登录'}}</button>
+      <button class="auth-cancel" bindtap="onCancel" disabled="{{busy}}">暂不登录</button>
+    </form>
+  </view>
+</view>

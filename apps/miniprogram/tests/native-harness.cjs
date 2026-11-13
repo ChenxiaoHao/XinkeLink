@@ -3,7 +3,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { createRequire } = require('node:module');
 
-function loadComponent(relativePath, { wx = {}, pages = [] } = {}) {
+function loadComponent(relativePath, { wx = {}, pages = [], fixture = true } = {}) {
+  wx.__fixtureMode = fixture;
   const filename = path.resolve(__dirname, '../.test-dist', relativePath);
   let definition;
   vm.runInNewContext(readFileSync(filename, 'utf8'), {

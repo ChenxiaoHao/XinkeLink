@@ -1,0 +1,26 @@
+<back-header title="我的帖子" fallback="/pages/profile/index" />
+<view class="record-page">
+  <view wx:if="{{loadFailed}}" class="record-empty">
+    <text class="record-empty-title">帖子暂时读取失败</text>
+    <text class="record-empty-copy">请检查网络后重试。</text>
+    <button class="record-primary" bindtap="reload">重新读取</button>
+  </view>
+  <block wx:else>
+    <view class="record-intro">共 {{posts.length}} 条 · 含自己的匿名动态</view>
+    <view wx:for="{{posts}}" wx:key="id" class="own-post">
+      <forum-post-card home post="{{item}}" bind:open="onOpenPost" bind:like="onLikePost" bind:repost="onRepostPost" bind:collect="onCollectPost" />
+      <view class="own-post-actions">
+        <text class="own-post-note">{{item.isAnonymous ? '匿名发布 · 仅自己可管理' : '公开可见'}}</text>
+        <button class="own-post-action" data-id="{{item.id}}" bindtap="onEditTap" disabled="{{!!busyId || deleting}}">编辑</button>
+        <button class="own-post-action own-post-action--danger" data-id="{{item.id}}" bindtap="onDeleteTap" disabled="{{!!busyId}}">{{busyId === item.id ? '确认中' : '删除'}}</button>
+      </view>
+    </view>
+    <view wx:if="{{!posts.length}}" class="record-empty">
+      <text class="record-empty-title">还没有发布过帖子</text>
+      <text class="record-empty-copy">记录校园生活，从第一条动态开始。</text>
+      <button class="record-primary" bindtap="onPublishTap">去发帖</button>
+    </view>
+    <view wx:else class="record-end">你已看到底啦</view>
+  </block>
+</view>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

@@ -1,0 +1,41 @@
+/* 帖子详情：正文占满一屏 → 8 灰带 → 回复流 → 压底回复栏。
+   数值口径 375 基准 px。 */
+.detail-header { position:sticky; top:0; z-index:20; background:#fff; }
+.forum-detail { background:#fff; padding-bottom:calc(96px + env(safe-area-inset-bottom)); }
+
+.detail-empty { padding:64px 32px; text-align:center; color:#536471; font-size:15px; line-height:20px; }
+.detail-empty button { width:max-content; min-width:0; margin:20px auto 0 !important; padding:0 20px; height:36px; border-radius:18px; background:#0f1419; color:#fff; font-size:15px; font-weight:700; line-height:36px; }
+
+.detail-band { height:8px; background:#f7f9f9; }
+
+.detail-comments { padding:0 16px 8px; }
+.detail-comments-heading { display:flex; align-items:center; justify-content:space-between; height:48px; }
+.detail-comments-title { color:#0f1419; font-size:20px; font-weight:800; line-height:26px; }
+/* 设计稿右侧是蓝色的「按热度」，可点切换成时间序。 */
+.detail-comment-order { width:auto; min-width:0; margin:0; padding:0; background:transparent; color:#0f1419; font-size:15px; font-weight:500; line-height:20px; }
+
+.detail-thread { border-bottom:1px solid #eff3f4; }
+.detail-thread:last-child { border-bottom:0; }
+.detail-replies { margin-left:44px; }
+.detail-replies .detail-expand-replies { width:auto; min-width:0; margin:0 0 4px; padding:6px 0; background:transparent; color:#0f1419; font-size:13px; font-weight:400; line-height:18px; text-align:left; }
+.detail-comment-empty { padding:40px 0; text-align:center; color:#536471; font-size:13px; }
+
+.detail-composer { position:fixed; left:0; right:0; z-index:30; padding:10px 16px; background:#fff; border-top:1px solid #eff3f4; }
+.detail-bottom-row { display:flex; align-items:center; gap:8px; }
+.detail-self-avatar { flex:none; width:32px; height:32px; border-radius:50%; background:#eff3f4; }
+/* 没有可用头像时退成红色首字圆，和设计稿左下的「浩」一致。 */
+.detail-self-letter { display:flex; align-items:center; justify-content:center; background:#c2331e; color:#fff; font-size:15px; font-weight:700; line-height:1; }
+.detail-bottom-row .detail-comment-placeholder { display:flex; align-items:center; flex:1; width:0; min-width:0; height:40px; margin:0; padding:0 16px; border-radius:20px; background:#f7f9f9; color:#536471; font-size:15px; font-weight:400; line-height:40px; text-align:left; }
+
+.detail-compose-heading { display:flex; align-items:center; padding:0 0 8px; color:#536471; font-size:13px; line-height:18px; }
+.detail-compose-heading > text { flex:1; min-width:0; }
+.detail-compose-heading button { width:auto; min-width:0; margin:0 0 0 16px !important; padding:0; background:transparent; color:#0f1419; font-size:13px; font-weight:400; line-height:18px; }
+.detail-comment-input { box-sizing:border-box; width:100%; min-height:56px; max-height:140px; padding:10px 12px; border-radius:12px; background:#f7f9f9; color:#0f1419; font-size:15px; line-height:20px; }
+.detail-compose-actions { display:flex; align-items:center; justify-content:space-between; margin-top:8px; color:#536471; font-size:12px; }
+.detail-compose-actions .detail-comment-send { width:auto; min-width:0; margin:0; padding:0 18px; height:32px; border-radius:16px; background:#0f1419; color:#fff; font-size:14px; font-weight:700; line-height:32px; }
+.detail-comment-send[disabled] { opacity:.55; }
+
+@media (min-width: 500px) {
+  .forum-detail, .detail-composer { max-width:460px; margin:0 auto; }
+  .detail-composer { left:0; right:0; }
+}

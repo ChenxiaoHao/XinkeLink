@@ -1,0 +1,37 @@
+<app-shell id="app-shell">
+<view class="notification-header">
+  <page-header title="通知" />
+  <view class="notification-tabs">
+    <button class="notification-tab {{noticeFilter === 'all' ? 'notification-tab--active' : ''}}" data-filter="all" bindtap="onFilterTap"><view><image wx:if="{{noticeFilter === 'all'}}" class="notification-tab-icon" src="/assets/icons/x-bell-ink.png" /><text>全部</text><view class="notification-tab-underline"></view></view></button>
+    <button class="notification-tab {{noticeFilter === 'unread' ? 'notification-tab--active' : ''}}" data-filter="unread" bindtap="onFilterTap"><view><text>未读</text><view class="notification-tab-underline"></view></view></button>
+  </view>
+</view>
+<view class="notification-list">
+  <view wx:if="{{guest}}" class="notification-empty">
+    <image class="notification-empty-icon" src="/assets/icons/x-bell-ink.png" />
+    <text class="notification-empty-title">登录后查看通知</text>
+    <text class="notification-empty-copy">登录后即可接收点赞、评论与私信提醒，之后无需再次登录。</text>
+    <button class="notification-empty-action" bindtap="onGuestLogin">登录</button>
+  </view>
+  <view wx:elif="{{loadFailed}}" class="notification-empty"><text class="notification-empty-title">通知暂时无法加载</text><button class="notification-empty-action" bindtap="onRetryTap">重试</button></view>
+  <block wx:else>
+    <view wx:for="{{visibleNotifications}}" wx:key="id" class="notification-row" data-id="{{item.id}}" bindtap="onNotificationTap">
+      <image class="notification-symbol" src="/assets/icons/x-{{item.type === 'reaction' ? 'heart-liked' : item.type === 'comment' ? 'chat-ink' : 'megaphone-ink'}}.png" />
+      <!-- 平台公告没有真人头像，用品牌字母圆代替，避免和左侧类型符号重复成两个喇叭。 -->
+      <image wx:if="{{item.type !== 'announcement'}}" class="notification-avatar" src="{{item.avatar}}" mode="aspectFill" data-kind="notice" data-id="{{item.id}}" data-source="{{item.avatar}}" binderror="onRemoteAvatarError" />
+      <view wx:else class="notification-avatar notification-avatar--brand">L</view>
+      <view class="notification-content">
+        <view class="notification-line"><text class="notification-actor">{{item.actorName}}</text><text class="notification-summary">{{item.summary}}</text><text class="notification-time">{{item.timeLabel}}</text></view>
+        <text wx:if="{{item.quote}}" class="notification-quote">{{item.quote}}</text>
+        <text wx:elif="{{item.detail}}" class="notification-quote">{{item.detail}}</text>
+      </view>
+      <image wx:if="{{item.image}}" class="notification-cover" src="{{item.image}}" mode="aspectFill" />
+    </view>
+    <view wx:if="{{!visibleNotifications.length}}" class="notification-empty">
+      <text class="notification-empty-title">{{noticeFilter === 'unread' ? '没有未读通知' : '这里还没有通知'}}</text>
+      <text class="notification-empty-copy">新的互动会出现在这里。</text>
+    </view>
+  </block>
+</view>
+</app-shell>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

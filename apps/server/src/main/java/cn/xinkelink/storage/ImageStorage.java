@@ -5,7 +5,7 @@ import java.io.IOException;
 /**
  * Image storage boundary. Implementations own key generation and MIME/content
  * verification. The caller owns and closes ImageUpload.content().
- * No storage implementation or upload endpoint is enabled in phase one.
+ * 本地与OSS适配器共用此边界，访问权限由媒体服务判断。
  */
 public interface ImageStorage {
     StoredImage store(ImageUpload image) throws IOException;

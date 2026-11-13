@@ -1,0 +1,12 @@
+<back-header title="微信登录" fallback="/pages/forum/index" />
+<view class="login-page">
+  <view class="login-brand"><view class="login-logo"><image src="/assets/brand/xinkelink-mark.png" mode="aspectFit" /></view><text class="login-title">信科 Link</text><text class="login-tagline">连接校园里的每一种生活</text><text class="login-badge">校园生活与交流社区</text></view>
+  <view class="login-story"><image src="/assets/mock/forum/desk.jpg" mode="aspectFill" /><view><text>轻量 · 自在 · 纯粹</text><text>记录身边日常，遇见同样热爱校园的你</text></view></view>
+  <view class="login-feature"><view class="login-feature-icon"><image src="/assets/icons/user-round-primary.png" /></view><view><text>用自己的名片，分享校园生活</text><text>昵称、头像、专业、班级和入学年份可随时编辑。以上信息由用户自填，未经平台核实；学号仅保存在本机。</text></view></view>
+  <view class="login-feature"><view class="login-feature-icon"><image src="/assets/icons/messages-square-primary.png" /></view><view><text>发布日常、互助答疑与校园见闻</text><text>把喜欢的内容留下，与同学私信交流。</text></view></view>
+  <view class="login-simulation"><view><image src="/assets/icons/file-muted.png" /><text>微信账号登录</text></view><text>通过微信登录后可发布内容和私信交流；访客可以先浏览公开内容。</text></view>
+  <view wx:if="{{loadFailed}}" class="login-error"><text>登录状态读取失败，请重试</text><button bindtap="reload">重新读取</button></view>
+  <button class="login-primary" bindtap="onLoginTap" loading="{{busy}}" disabled="{{busy}}">{{busy ? '正在进入' : '微信登录'}}</button>
+  <button class="login-guest" bindtap="onGuestTap" disabled="{{busy}}">以游客身份先逛逛</button>
+  <text class="login-footer">信科 Link · 校园开放共建项目</text>
+</view>

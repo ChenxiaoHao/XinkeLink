@@ -4,12 +4,17 @@ page {
   background: var(--xlk-color-background);
   color: var(--xlk-color-text);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 28rpx;
-  line-height: 1.6;
+  font-size: var(--xlk-font-body);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
 }
 
 button::after { border: 0; }
-button { font-family: inherit; }
+/* 微信内置 button 带 184px 固定宽度和左右 auto 外边距（且是 !important 级），
+   会把 flex 行挤成居中的一小块：首页 6 个板块 tab 只露出 2 个、热门行被压成 4 字一行、
+   AI 建议 chip 被 auto 外边距撑成两列散开。这里统一把布局权交还给业务样式。 */
+button { width: auto !important; margin: 0 !important; min-width: 0; font-family: inherit; color: inherit; background: transparent; padding: 0; line-height: normal; }
+image { display: block; }
 
 .page-content {
   padding: var(--xlk-space-4);
@@ -18,7 +23,31 @@ button { font-family: inherit; }
 
 .page-heading { display: flex; align-items: baseline; gap: var(--xlk-space-2); }
 .page-title { font-size: 36rpx; font-weight: 600; }
-.page-subtitle { color: var(--xlk-color-muted); font-size: 20rpx; }
+.page-subtitle { color: var(--xlk-color-muted); font-size: 24rpx; }
 .page-categories { display: flex; gap: var(--xlk-space-4); margin-top: var(--xlk-space-3); white-space: nowrap; font-size: 24rpx; }
 .page-categories__selected { color: var(--xlk-color-primary-strong); font-weight: 600; border-bottom: 4rpx solid var(--xlk-color-primary); padding-bottom: var(--xlk-space-1); }
 .page-body { min-height: 360rpx; }
+
+/* tablet-scale:begin */
+@media (min-width: 500px) {
+
+page {
+  font-size: var(--xlk-font-body);
+}
+
+.page-content {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+.page-title { font-size: 18px; }
+.page-subtitle { font-size: 12px; }
+.page-categories { font-size: 12px; }
+.page-categories__selected { border-bottom: 2px solid var(--xlk-color-primary); padding-bottom: var(--xlk-space-1); }
+.page-body { min-height: 180px; }
+}
+
+/* tablet-scale:end */
+
+/* 平板使用与论坛首页一致的手机宽度内容列。 */
+@media (min-width: 500px) {
+  page { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
+}

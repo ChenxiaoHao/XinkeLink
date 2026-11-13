@@ -1,2 +1,53 @@
-<page-header title="我的" profile="{{true}}" />
-<view class="page-content"><view class="page-body" /></view>
+<view class="profile-page">
+  <view class="profile-cover">
+    <view class="profile-nav" style="padding-top:{{statusHeight}}px; padding-right:{{rightSpace}}px;">
+      <button class="profile-nav-button" bindtap="onBack" aria-label="返回"><image src="/assets/icons/x-chevron-left-white.png" mode="aspectFit" /></button>
+      <button class="profile-nav-button" bindtap="onMoreTap" aria-label="更多操作"><image src="/assets/icons/x-search-white.png" mode="aspectFit" /></button>
+    </view>
+  </view>
+
+  <view wx:if="{{loadFailed}}" class="profile-state">
+    <text class="profile-state-title">个人资料暂时读取失败</text>
+    <text class="profile-state-copy">网络或本地存储暂时不可用，重试一次就好。</text>
+    <button class="profile-state-action" bindtap="reload">重新读取</button>
+  </view>
+
+  <block wx:else>
+    <view class="profile-identity">
+      <image class="profile-avatar" src="{{profile.avatar}}" data-kind="profile" data-source="{{profile.avatar}}" binderror="onRemoteAvatarError" mode="aspectFill" bindtap="onHomeTap" />
+      <text class="profile-name">{{profile.nickname}}</text>
+      <text wx:if="{{profile.major || profile.className || profile.year}}" class="profile-meta">{{profile.major}}{{profile.className ? (profile.major ? ' · ' : '') + profile.className : ''}}{{profile.year ? ((profile.major || profile.className) ? ' · ' : '') + profile.year + '级' : ''}}</text>
+      <text wx:if="{{profile.bio}}" class="profile-bio">{{profile.bio}}</text>
+      <view class="profile-stats">
+        <view class="profile-stat"><text class="profile-stat-number">{{postCount}}</text><text class="profile-stat-unit">条动态</text></view>
+        <view class="profile-stat"><text class="profile-stat-number">{{likeCount}}</text><text class="profile-stat-unit">次获赞</text></view>
+      </view>
+      <view class="profile-actions">
+        <button class="profile-action" open-type="share">分享个人资料</button>
+        <button class="profile-action" bindtap="onEditTap">编辑个人资料</button>
+      </view>
+    </view>
+
+    <view wx:if="{{!loggedIn}}" class="profile-guest">
+      <text class="profile-guest-copy">当前为访客浏览</text>
+      <button class="profile-guest-action" bindtap="onLoginTap" disabled="{{loggingIn}}">{{loggingIn ? '正在登录' : '微信登录'}}</button>
+    </view>
+
+    <view class="profile-tabs">
+      <button class="profile-tab {{activeTab === 'posts' ? 'profile-tab--active' : ''}}" data-tab="posts" bindtap="onTabTap"><text>帖子</text><view class="profile-tab-underline"></view></button>
+      <button class="profile-tab {{activeTab === 'liked' ? 'profile-tab--active' : ''}}" data-tab="liked" bindtap="onTabTap"><text>喜欢</text><view class="profile-tab-underline"></view></button>
+    </view>
+
+    <view wx:for="{{activeTab === 'posts' ? posts : likedPosts}}" wx:key="id" class="profile-post">
+      <forum-post-card home post="{{item}}" bind:open="onOpenPost" bind:like="onLikePost" bind:repost="onRepostPost" bind:collect="onCollectPost" />
+    </view>
+
+    <view wx:if="{{activeTab === 'posts' ? !posts.length : !likedPosts.length}}" class="profile-state">
+      <text class="profile-state-title">{{activeTab === 'posts' ? '还没有公开的帖子' : '还没有点赞过帖子'}}</text>
+      <text class="profile-state-copy">{{activeTab === 'posts' ? '匿名帖子只出现在「我的帖子」，公开主页不会展示。' : '在动态里点个赞，喜欢的帖子会留在这里。'}}</text>
+    </view>
+
+    <view wx:if="{{activeTab === 'posts' ? posts.length : likedPosts.length}}" class="profile-end">你已看到底啦</view>
+  </block>
+</view>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

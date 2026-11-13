@@ -16,3 +16,9 @@ Thumbs.db
 **/project.private.config.json
 .local/
 .superpowers/
+dump.rdb
+generated-images/
+runtime.json
+private/
+*.pem
+*.key

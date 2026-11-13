@@ -1,0 +1,27 @@
+page { background:#fff; color:#0f1419; }
+.feedback-page { padding:16px 16px 96px; min-height:100vh; box-sizing:border-box; }
+.fb-title { display:block; font-size:23px; font-weight:800; letter-spacing:.2px; color:#0f1419; }
+.fb-desc { display:block; margin-top:6px; font-size:15px; line-height:20px; color:#536471; }
+
+/* 类型胶囊：未选灰底，选中黑底白字（X 的 Help 反馈口径）。 */
+.fb-types { display:flex; gap:8px; margin-top:20px; }
+.fb-chip { height:34px; padding:0 16px; margin:0; background:#eff3f4; border-radius:17px; color:#0f1419; font-size:15px; font-weight:500; line-height:34px; }
+.fb-chip--on { background:#0f1419; color:#fff; font-weight:700; }
+
+/* 编辑区：去掉卡片底，改为 X 的平底 + 下分割线。 */
+.fb-editor { margin-top:20px; border-bottom:1px solid #eff3f4; }
+.fb-input { width:100%; min-height:150px; font-size:17px; line-height:24px; color:#0f1419; }
+.fb-count { display:block; margin:8px 0 12px; text-align:right; color:#536471; font-size:13px; font-variant-numeric:tabular-nums; }
+.fb-contact { border-bottom:1px solid #eff3f4; }
+.fb-contact-input { height:48px; font-size:17px; color:#0f1419; }
+
+.fb-foot { position:fixed; left:0; right:0; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:#fff; border-top:1px solid #eff3f4; box-sizing:border-box; }
+.fb-submit { width:100%; height:44px; margin:0; background:#0f1419; color:#fff; border-radius:22px; font-size:15px; font-weight:700; line-height:44px; }
+.fb-submit[disabled] { opacity:.5; }
+
+/* tablet-scale:begin */
+@media (min-width: 500px) {
+  .feedback-page { padding:16px 16px 96px; }
+  .fb-foot { padding:12px 16px calc(12px + env(safe-area-inset-bottom)); }
+}
+/* tablet-scale:end */

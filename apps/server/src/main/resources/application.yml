@@ -1,10 +1,20 @@
 spring:
   application:
     name: xinkelink-server
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  flyway:
+    enabled: false
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+      accept-float-as-int: false
 
 server:
   address: 127.0.0.1
-  port: 8080
+  port: 18081
   shutdown: graceful
 
 management:
@@ -15,3 +25,12 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    redis:
+      enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

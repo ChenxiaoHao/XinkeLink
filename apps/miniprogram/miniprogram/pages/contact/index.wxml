@@ -1,6 +1,34 @@
-<page-header subtitle="Contact" />
-<view class="page-content">
-  <view class="page-heading"><text class="page-title">联系</text><text class="page-subtitle">校园私信与实时提醒</text></view>
-  <view class="page-categories"><text class="page-categories__selected">私信</text><text>通知</text></view>
-  <view class="page-body" />
+<app-shell id="app-shell">
+<view class="inbox-header">
+  <!-- 「全部 / 未读」按设计稿放回顶栏右侧，搜索独占一行。 -->
+  <page-header title="聊天" />
+  <view class="inbox-tools">
+    <view class="inbox-search"><image src="/assets/icons/x-search-muted.png" /><input value="{{query}}" placeholder="搜索" bindinput="onQueryInput" /></view>
+  </view>
 </view>
+<view class="inbox-body">
+  <view wx:if="{{guest}}" class="inbox-empty">
+    <image class="inbox-empty-icon" src="/assets/icons/x-mail-ink.png" />
+    <text class="inbox-empty-title">登录后开始私信</text>
+    <text class="inbox-empty-copy">登录后即可与同学私聊，之后无需再次登录。</text>
+    <button class="inbox-empty-action" bindtap="onGuestLogin">登录</button>
+  </view>
+  <view wx:elif="{{loadFailed}}" class="inbox-empty"><image class="inbox-empty-icon" src="/assets/icons/x-chat-ink.png" /><text class="inbox-empty-title">暂时无法加载聊天</text><button class="inbox-empty-action" bindtap="onRetryTap">重试</button></view>
+  <block wx:elif="{{visibleConversations.length}}">
+    <view wx:for="{{visibleConversations}}" wx:key="id" class="conversation-row" data-id="{{item.id}}" bindtap="onConversationTap">
+      <image class="conversation-avatar" src="{{item.peer.avatar}}" mode="aspectFill" data-kind="conversation" data-id="{{item.id}}" data-source="{{item.peer.avatar}}" binderror="onRemoteAvatarError" />
+      <view class="conversation-text">
+        <view class="conversation-top"><text class="conversation-name">{{item.peer.nickname}}</text><text class="conversation-time">{{item.timeLabel}}</text></view>
+        <text class="conversation-preview">{{item.lastMessage}}</text>
+      </view>
+      <view wx:if="{{item.unread}}" class="conversation-dot" />
+    </view>
+  </block>
+  <view wx:else class="inbox-empty">
+    <image class="inbox-empty-icon" src="/assets/icons/x-chat-ink.png" />
+    <text class="inbox-empty-title">{{query ? '没有找到聊天' : '无私信'}}</text>
+    <text class="inbox-empty-copy">{{query ? '试试其他名字或关键词。' : '发起新对话以开始发送私信。'}}</text>
+  </view>
+</view>
+</app-shell>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

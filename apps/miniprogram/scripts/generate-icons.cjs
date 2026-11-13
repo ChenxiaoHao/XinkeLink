@@ -10,7 +10,7 @@ const variants = {
   'shopping-bag': ['primary', 'muted'],
   'message-square-text': ['primary', 'muted'],
   'user-round': ['primary', 'muted', 'white'],
-  'plus': ['white'],
+  'plus': ['white', 'primary'],
   'x': ['muted'],
   'notebook-pen': ['primary'],
   'archive': ['muted'],
@@ -25,6 +25,19 @@ const variants = {
   'message-circle': ['muted'],
   'share-2': ['muted'],
   'ellipsis': ['muted'],
+  'chevron-down': ['primary'],
+  'chevron-left': ['muted'],
+  'arrow-up': ['primary', 'white'],
+  'arrow-down': ['primary'],
+  'arrow-up-down': ['primary'],
+  'sliders-horizontal': ['primary'],
+  'map-pin': ['primary'],
+  'shield-check': ['primary'],
+  'check-check': ['primary'],
+  'camera': ['primary'],
+  'file': ['muted'],
+  'send': ['white'],
+  'thumbs-up': ['muted', 'primary-filled'],
 };
 const colors = { primary: '#6489B8', muted: '#8A93A3', white: '#FFFFFF' };
 let count = 0;
