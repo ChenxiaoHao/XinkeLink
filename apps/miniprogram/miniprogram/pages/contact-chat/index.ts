@@ -30,6 +30,7 @@ registerPage(wx, Page, 'contact-chat')({
     missing: false,
     canSend: false,
     blockedReason: '',
+    sending: false,
   },
   _peerId: '',
   _targetMessageId: '',
@@ -60,7 +61,7 @@ registerPage(wx, Page, 'contact-chat')({
   onHeaderLayout(event:WechatMiniprogram.CustomEvent<{height:number;rightSpace?:number}>) {this.setData({headerHeight:event.detail.height,headerRightSpace:event.detail.rightSpace||104})},
   onKeyboardHeightChange(event:WechatMiniprogram.CustomEvent<{height:number}>) {this.setData({keyboardHeight:Math.max(0,event.detail.height||0)})},
   onMessageInput(event:WechatMiniprogram.CustomEvent<{value:string}>) {this.setData({input:event.detail.value,failedText:''})},
-  onSendTap() {const text=this.data.input.trim();if(!text||this.data.loadFailed||!this._peerId||!requireLocalSession(wx))return;if(readPeerChatSettings(wx,this._peerId).blocked){this.setData({canSend:false,blockedReason:'你已屏蔽这位同学'});wx.showToast({title:'你已屏蔽这位同学',icon:'none'});return}try{sendText(wx,this._peerId,text);this.setData({input:'',failedText:''});this.refreshConversation(false)}catch{this.setData({failedText:this.data.input});wx.showToast({title:'发送失败，请重试',icon:'none'})}},
+  onSendTap() {const text=this.data.input.trim();if(!text||this.data.loadFailed||!this._peerId||this.data.sending||!requireLocalSession(wx))return;if(readPeerChatSettings(wx,this._peerId).blocked){this.setData({canSend:false,blockedReason:'你已屏蔽这位同学'});wx.showToast({title:'你已屏蔽这位同学',icon:'none'});return}this.setData({sending:true});try{sendText(wx,this._peerId,text);this.setData({input:'',failedText:''});this.refreshConversation(false)}catch{this.setData({failedText:this.data.input});wx.showToast({title:'发送失败，请重试',icon:'none'})}finally{this.setData({sending:false})}},
   onRetrySendTap(){this.onSendTap()},onRetryTap(){this.refreshConversation()},onScrollToUpper(){},
   // wxml 三处头像都绑了 binderror，但演示模式侧一直缺这个 handler，破图时没有兜底。
   onChatAvatarError(event:WechatMiniprogram.TouchEvent){

@@ -4,7 +4,7 @@ import {unreadTotal} from '../../features/contact/badges'
 import {readLocalSession,setLocalSession} from '../../features/profile/repository'
 import {client,Runtime} from '../../backend/client'
 type InboxData = { activeTab:'messages'|'notifications';noticeFilter:string;conversationFilter:string;query:string;conversations:Conversation[];visibleConversations:Conversation[];notifications:Notice[];visibleNotifications:Notice[];messageUnread:number;notificationUnread:number;messagesFailed:boolean;notificationsFailed:boolean;loadFailed:boolean;guest:boolean }
-interface InboxInstance {data:InboxData;setData(patch:Partial<InboxData>):void;getTabBar():{setData(patch:Record<string,unknown>):void}|null;refreshInbox():void;updateTabBadge():void;updateVisibleNotifications():void;filterConversations():void}
+interface InboxInstance {data:InboxData;setData(patch:Partial<InboxData>):void;getTabBar():{setData(patch:Record<string,unknown>):void}|null;refreshInbox():void;updateTabBadge():void;updateVisibleNotifications():void;filterConversations():void;onRemoteAvatarError(event:WechatMiniprogram.TouchEvent):void}
 // 访客不进收件箱：通知与私信都要求登录态，未登录显示引导空态。
 function loggedInNow(runtime: typeof wx): boolean {
   try {
@@ -34,5 +34,7 @@ export function inbox(mode:'messages'|'notifications', runtime: typeof wx = (glo
  onRetryTap(){this.refreshInbox()},onPullDownRefresh(){try{this.refreshInbox()}finally{wx.stopPullDownRefresh()}},
  onNewChat(){wx.navigateTo({url:'/pages/new-chat/index'})},
  onNoticeMore(e:WechatMiniprogram.TouchEvent){const id=e.currentTarget.dataset.id;wx.showActionSheet({itemList:['标为已读'],success:()=>{markNotificationRead(wx,id);this.refreshInbox()}})},
+ // 与 backend/pages.ts 的 onRemoteAvatarError 对齐：头像加载失败回退到内置默认头像；演示模式没有图片授权概念，直接回退。
+ onRemoteAvatarError(event:WechatMiniprogram.TouchEvent){const dataset=event.currentTarget.dataset as {kind?:string;id?:string;source?:string};const{kind,id}=dataset;const fallback='/assets/icons/user-round-muted.png';const current=():string|undefined=>{if(kind==='conversation'){const index=this.data.conversations.findIndex(item=>item.id===id);return index>=0?this.data.conversations[index]?.peer?.avatar:undefined}if(kind==='notice'){const index=this.data.visibleNotifications.findIndex(item=>item.id===id);return index>=0?this.data.visibleNotifications[index]?.avatar:undefined}return undefined};const source=dataset.source||current();if(!source||source===fallback||current()!==source)return;if(kind==='conversation'){const index=this.data.conversations.findIndex(item=>item.id===id);if(index>=0)this.setData({['conversations['+index+'].peer.avatar']:fallback} as Partial<InboxData>)}else if(kind==='notice'){for(const list of ['visibleNotifications','notifications'] as const){const index=this.data[list].findIndex(item=>item.id===id&&item.avatar===source);if(index>=0)this.setData({[list+'['+index+'].avatar']:fallback} as Partial<InboxData>)}}},
  }; return definition as unknown as WechatMiniprogram.Page.Options<InboxData, InboxInstance>
 }
