@@ -3,7 +3,7 @@ import { MOCK_POSTS } from './mock-posts'
 import { ForumInteractions, MockPost, PostInteraction, LOCAL_AUTHOR_ID } from './types'
 import { COMMENT_STORAGE_KEY, CommentState, ForumComment, parseCommentState, visibleComments } from './comments'
 import { PostDraft, validatePostDraft } from './publish'
-import { localIdentity } from '../profile/repository'
+import { localIdentity, readLocalSession, requireLocalSession } from '../profile/repository'
 
 export const POST_STORAGE_KEY = 'xinkelink.forum.posts.v2'
 export const INTERACTION_STORAGE_KEY = 'xinkelink.forum.interactions.v1'
@@ -29,9 +29,11 @@ export function readLocalPosts(storage: ForumStorage): MockPost[] {
 }
 export function readForum(storage: ForumStorage): { posts: MockPost[]; interactions: ForumInteractions; commentState: CommentState } {
   const savedComments = parseCommentState(storage.getStorageSync(COMMENT_STORAGE_KEY)), identity = localIdentity(storage)
-  const commentState = { ...savedComments, added: savedComments.added.map(comment => comment.author.id === LOCAL_AUTHOR_ID ? { ...comment, author: identity } : comment) }
+  // 访客是干净的旁观视角：不展示上一个登录账号的点赞/收藏/评论点赞（与真机模式按 JWT 会话隔离一致）。
+  const loggedIn = readLocalSession(storage)
+  const commentState = { ...savedComments, added: savedComments.added.map(comment => comment.author.id === LOCAL_AUTHOR_ID ? { ...comment, author: identity } : comment), ...(loggedIn ? {} : { likes: {} }) }
   const posts = [...readLocalPosts(storage), ...MOCK_POSTS].map(post => ({ ...post, author: post.author.id === LOCAL_AUTHOR_ID ? identity : post.author, comments: visibleComments(post, commentState).length }))
-  const raw = storage.getStorageSync(INTERACTION_STORAGE_KEY)
+  const raw = loggedIn ? storage.getStorageSync(INTERACTION_STORAGE_KEY) : undefined
   const interactions = normalizeInteractions(raw)
   if (!unset(raw)) {
     if (!raw || typeof raw !== 'object' || (raw as ForumInteractions).version !== 1 || !(raw as ForumInteractions).posts
@@ -41,6 +43,8 @@ export function readForum(storage: ForumStorage): { posts: MockPost[]; interacti
   return { posts, interactions, commentState }
 }
 export function togglePostInteraction(storage: ForumStorage, id: string, field: keyof PostInteraction): void {
+  // 访客不能互动：弹一键登录（各页面的点赞入口统一在这里拦截）。
+  if (!requireLocalSession(storage)) return
   const snapshot = readForum(storage)
   if (!snapshot.posts.some(post => post.id === id)) throw new Error('帖子不存在')
   storage.setStorageSync(INTERACTION_STORAGE_KEY, toggleInteraction(snapshot.posts, snapshot.interactions, id, field))
@@ -64,6 +68,7 @@ export function addForumComment(storage: ForumStorage, postId: string, body: str
   return id
 }
 export function toggleForumCommentLike(storage: ForumStorage, postId: string, id: string): void {
+  if (!requireLocalSession(storage)) return
   const { state, comments } = commentContext(storage, postId)
   if (!comments.some(comment => comment.id === id)) throw new Error('评论不存在')
   storage.setStorageSync(COMMENT_STORAGE_KEY, { ...state, likes: { ...state.likes, [id]: !state.likes[id] } })

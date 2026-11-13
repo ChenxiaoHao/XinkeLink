@@ -133,6 +133,10 @@ test('guest mutation guards preserve likes and profile edits until local simulat
   // 「我的收藏」已拆成独立的书签页，本页现为「我的点赞」，因此断言改用点赞状态。
   const wx = api(); f.togglePostInteraction(wx, 'post-003', 'liked'); p.setLocalSession(wx, false);
   const subject = page('my-collections', wx); subject.onShow(); subject.onLikePost(detail('post-003'));
-  assert.equal(subject.data.posts.some(item => item.id === 'post-003'), true); assert.match(wx.modal.content, /登录/);
+  // 访客是干净的旁观视角：不显示上一个登录账号的点赞（存储保留），互动入口弹一键登录。
+  assert.equal(subject.data.posts.some(item => item.id === 'post-003'), false); assert.match(wx.modal.content, /登录/);
   const edit = page('profile-edit', wx); edit.onLoad(); edit.setData({ form: { ...edit.data.form, nickname: '不应保存' } }); edit.onSaveTap(); assert.equal(p.readProfile(wx).nickname, '陈林舟');
+  // 重新登录后，之前的点赞从存储里恢复——证明守卫只是隐藏展示、没有销毁数据。
+  p.setLocalSession(wx, true); subject.onShow();
+  assert.equal(subject.data.posts.some(item => item.id === 'post-003'), true);
 });
