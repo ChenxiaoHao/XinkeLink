@@ -30,16 +30,27 @@ export class ApiClient {
   private betaAccessRequired: (() => void) | null = null
   private listeners = new Set<() => void>()
   private sessionGeneration = 0
+  private lastNotifiedLoggedIn: boolean | null = null
   constructor(public runtime: Runtime, public origin = BACKEND_ORIGIN) {
     const stored = runtime.getStorageSync(SESSION_STORAGE_KEY) as Session | undefined
     if (stored && typeof stored.accessToken === 'string' && typeof stored.refreshToken === 'string'
       && typeof stored.expiresAt === 'number' && stored.me && typeof stored.me.id === 'string') this.session = stored
+    this.lastNotifiedLoggedIn = this.loggedIn
   }
   get me(): Json | null { return this.session?.me ?? null }
   get loggedIn(): boolean { return !!this.session && this.session.profileConfirmed !== false }
   get token(): string | undefined { return this.session?.accessToken }
   onSessionChange(listener: () => void): () => void { this.listeners.add(listener); return () => this.listeners.delete(listener) }
-  private changed(): void { this.listeners.forEach(listener => listener()) }
+  private changed(): void {
+    this.listeners.forEach(listener => listener())
+    // 退出登录（已登录→访客）的后端汇合点：reLaunch 首页让所有页面按访客身份重载。
+    // 登录侧（访客→已登录）不在这里跳：登录流程有自己的目的地（beta 门禁兑换后 reLaunch
+    // 到 redirect 目标），中途跳转会摧毁进行中的流程页；抽屉登录由 refreshIdentity 就地刷新。
+    // token 静默刷新（save）、资料更新（setMe）登录态不变，不触发跳转。
+    const now = this.loggedIn
+    if (this.lastNotifiedLoggedIn === true && now === false) this.runtime.reLaunch?.({ url: '/pages/forum/index' })
+    this.lastNotifiedLoggedIn = now
+  }
   clear(): void {
     this.sessionGeneration++
     this.signingIn = null

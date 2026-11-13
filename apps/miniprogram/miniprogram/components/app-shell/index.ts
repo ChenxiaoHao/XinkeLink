@@ -116,7 +116,7 @@ Component({
    wx.showModal({title:'退出登录？',content:'已发布的内容、收藏和资料会保留，退出后可继续以访客身份浏览。',confirmText:'退出登录',success:result=>{
     if(!result.confirm)return
     if((wx as Runtime).__fixtureMode===true){
-     try{setLocalSession(wx,false);this.setData({loggedIn:false})}catch{wx.showToast({title:'退出未完成，请重试',icon:'none'})}
+     try{setLocalSession(wx,false);this.setData({loggedIn:false});this.refreshIdentity()}catch{wx.showToast({title:'退出未完成，请重试',icon:'none'})}
      return
     }
     this.setData({busy:true})

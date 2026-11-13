@@ -66,10 +66,16 @@ export function readLocalSession(storage: LocalStorage): boolean {
   return value
 }
 export function setLocalSession(storage: LocalStorage, loggedIn: boolean): void {
-  readLocalSession(storage)
+  // 读失败或不确定时按访客处理（安全侧回退）。
+  let previous = false
+  try { previous = readLocalSession(storage) } catch { previous = false }
   storage.setStorageSync(SESSION_KEY, loggedIn)
   // 抽屉登录、访客一键登录、退出登录都收敛到这里，统一广播一次。
   emitIdentityChange()
+  // 身份切换（访客↔已登录）的唯一汇合点：仅在登录态变化时 reLaunch 首页，
+  // 让所有页面按新身份重载（已在首页同样刷新）。资料保存、头像更新走 saveProfile，
+  // 不经过这里，不会触发跳转；同一次切换只跳一次。
+  if (previous !== loggedIn) (storage as LocalStorage & Partial<Pick<typeof wx, 'reLaunch'>>).reLaunch?.({ url: '/pages/forum/index' })
 }
 export function requireLocalSession(api: LocalStorage & Partial<Pick<typeof wx, 'showModal' | 'showToast' | 'navigateTo'>>): boolean {
   try {
