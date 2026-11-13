@@ -6,5 +6,5 @@
    <text wx:if="{{(item.key === 'contact' && messageUnread) || (item.key === 'notifications' && notificationUnread)}}" class="tab-unread-badge">{{item.key === 'contact' ? (messageUnread > 99 ? '99+' : messageUnread) : (notificationUnread > 99 ? '99+' : notificationUnread)}}</text>
   </button>
  </view>
- <button wx:if="{{!drawerVisible && (activeKey === 'forum' || activeKey === 'search' || activeKey === 'notifications' || activeKey === 'contact')}}" class="publish-button" bindtap="onFab" hover-class="publish-button--pressed" aria-label="{{activeKey === 'contact' ? '发起新对话' : '发布'}}"><image class="publish-icon" src="/assets/icons/{{activeKey === 'contact' ? 'x-square-pen-white' : 'plus-white'}}.png" /></button>
+ <button wx:if="{{!drawerVisible && (activeKey === 'forum' || activeKey === 'search' || activeKey === 'notifications')}}" class="publish-button" bindtap="onFab" hover-class="publish-button--pressed" aria-label="发布"><image class="publish-icon" src="/assets/icons/plus-white.png" /></button>
 </view>
