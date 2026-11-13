@@ -9,3 +9,10 @@ export function imagePadding(width: unknown, height: unknown): number {
     && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0
   return 100 / boundedImageRatio(valid ? width / height : undefined)
 }
+
+/** 详情页单图完整显示：不夹比例，容器高度完全跟随原图（容器比例=图片比例时 aspectFill 无裁剪）。 */
+export function naturalImagePadding(width: unknown, height: unknown): number {
+  const valid = typeof width === 'number' && typeof height === 'number'
+    && Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0
+  return valid ? height / width * 100 : 75
+}

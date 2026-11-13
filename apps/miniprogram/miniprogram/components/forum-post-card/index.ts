@@ -1,6 +1,6 @@
 import { ForumPostView } from '../../features/forum/types'
 import { previewForumImages } from '../../features/forum/media'
-import { imagePadding } from '../../features/media/layout'
+import { imagePadding, naturalImagePadding } from '../../features/media/layout'
 import { loadAuthorizedLocalImage, needsPreviewRefresh } from '../../backend/preview'
 import { client, Runtime } from '../../backend/client'
 import { readLocalSession } from '../../features/profile/repository'
@@ -44,7 +44,12 @@ Component({
       const post = this.data.post as ForumPostView | null, source = event.currentTarget.dataset.source
       if (!post?.images.includes(source)) return
       this.setData({ imageFailures: { ...this.data.imageFailures, [source]: false },
-        ...(this.data.home && post.images.length === 1 ? { singleImagePadding: imagePadding(event.detail.width, event.detail.height) } : {}) })
+        // 列表单图按真实比例但高度不超过宽度的 1.25 倍（超出裁剪）；详情页单图完整显示不裁剪。
+        ...(post.images.length === 1 && (this.data.home || this.data.detail)
+          ? { singleImagePadding: this.data.home
+            ? imagePadding(event.detail.width, event.detail.height)
+            : naturalImagePadding(event.detail.width, event.detail.height) }
+          : {}) })
     },
     async onImageError(event: WechatMiniprogram.CustomEvent) {
       const post = this.data.post as ForumPostView | null, source = event.currentTarget.dataset.source
