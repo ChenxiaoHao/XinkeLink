@@ -1,7 +1,7 @@
 #Requires -Version 7.4
 param(
   [ValidateRange(1, 65535)][int]$Port = 18081,
-  [ValidatePattern('^[A-Za-z0-9_-]+(,[A-Za-z0-9_-]+)*$')][string]$Profiles = 'db,dev',
+  [ValidatePattern('^[A-Za-z0-9_-]+(,[A-Za-z0-9_-]+)*$')][string]$Profiles = 'db,dev,auth',
   [string]$JavaHome = '',
   [switch]$Build
 )

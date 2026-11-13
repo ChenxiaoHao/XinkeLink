@@ -250,7 +250,7 @@ Vue 3.5 + TS 5.9 + Vite 8 + Pinia + Element Plus + vue-router；测试 Vitest + 
 ### 启动
 
 - 开发隔离环境：先 `scripts/initialize-backend-dev.ps1`（拉起隔离 MySQL 13306、生成 `.local/backend-day1/private/runtime.json`），再 `scripts/start-backend-dev.ps1 -Port <port> -Profiles <profiles>`。
-- **profiles 默认是 `db,dev`，不含 `auth`** —— 不显式传 `-Profiles db,dev,auth` 时所有业务 Controller 不注册，只有 `/api/v1/health`。
+- **profiles 默认是 `db,dev,auth`**（2026-11-13 起，原为 `db,dev` 导致业务 Controller 不注册）—— 显式传 `-Profiles` 可覆盖。
 - 健康检查：`/actuator/health` = UP 且 `/api/v1/health` 返回 `application=xinkelink-server`。
 - 小程序端演示模式不需要后端；后端模式才需要以上全部。
 
@@ -259,7 +259,7 @@ Vue 3.5 + TS 5.9 + Vite 8 + Pinia + Element Plus + vue-router；测试 Vitest + 
 ## 7. 已知问题与待办（接手前先看）
 
 1. **端口四方不一致（最优先）**：小程序 `backend/config.ts` 写死 `http://127.0.0.1:18086`（文档标注"临时·已停止"）；README 与 admin vite 代理是 `18081`；`application.yml` 默认 `8080`；启动脚本默认 `-Port 18080`。接后端前必须先统一（建议 18081 或做成可配置），否则小程序后端模式全量 `NETWORK_ERROR`。
-2. **启动脚本 profiles 默认值坑**：默认 `db,dev` 不含 `auth`，业务接口不注册（见 §6）。
+2. ~~**启动脚本 profiles 默认值坑**~~：已修复（2026-11-13），默认改为 `db,dev,auth`，业务接口默认注册。
 3. **帖子分类前后端不一致**：前端 8 板块（含 `secondhand/complain/buddy`，V9 后端把分类收窄为 `campus/lost_found/study/help`）—— 真机模式发新分类帖子会被后端 400。要么后端扩 CHECK，要么前端收缩板块。
 4. **真机侧小缺口**：编辑帖子不带 `anonymous`（后端 `UpdatePost` 无该字段，硬加会 400）；`contact` 页访客态两套口径并存；`ForumService.author()` 不返回 `major`（前端 `authorMajor` 恒空但 UI 未消费）。
 5. **WXSS @import 位置违规**：`pages/report|chat-settings|profile-edit/index.wxss` 的 `@import "../../styles/page-polish.wxss"` 写在规则之后被忽略；移到首行会改变层叠顺序，需重新目验这三个旧排版页。
