@@ -1,7 +1,8 @@
-/** 只约束展示容器，不改变原图或业务数据。 */
+/** 只约束展示容器，不改变原图或业务数据。
+ *  首页 feed 单图：高度不超过宽度的 0.75（4:3 封顶），过宽的下限 0.667（避免扁长条）。 */
 export function boundedImageRatio(value: unknown): number {
   const ratio = typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 4 / 3
-  return Math.max(0.8, Math.min(1.5, ratio))
+  return Math.max(4 / 3, Math.min(1.5, ratio))
 }
 
 export function imagePadding(width: unknown, height: unknown): number {
