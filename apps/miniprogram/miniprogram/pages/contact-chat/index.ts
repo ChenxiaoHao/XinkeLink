@@ -1,7 +1,7 @@
 import { registerPage } from '../../backend/pages'
 import { ContactMessage } from '../../features/contact/storage'
 import { openConversation, Peer, readConversation, resolvePeer, sendText } from '../../features/contact/repository'
-import { localIdentity, requireLocalSession } from '../../features/profile/repository'
+import { localIdentity, readLocalSession, requireLocalSession } from '../../features/profile/repository'
 import { readPeerChatSettings } from '../../features/contact/settings'
 
 interface ChatMessage extends ContactMessage { showTime: boolean; timeText: string }
@@ -34,6 +34,7 @@ registerPage(wx, Page, 'contact-chat')({
   },
   _peerId: '',
   _targetMessageId: '',
+  _guestPrompted: false,
   onLoad(options: Record<string, string | undefined>) {
     this._peerId = options.peerId ?? ''
     this._targetMessageId = options.messageId ?? ''
@@ -42,6 +43,10 @@ registerPage(wx, Page, 'contact-chat')({
   onShow() { this.refreshConversation() },
   refreshConversation(markRead = true) {
     try {
+      // 访客拦截：不读历史、不写已读标记（读失败也按访客处理）；一键登录只提示一次，确认后重新进入生效。
+      let loggedIn = false
+      try { loggedIn = readLocalSession(wx) } catch { loggedIn = false }
+      if (!loggedIn) { if (!this._guestPrompted) { this._guestPrompted = true; requireLocalSession(wx) } return }
       if (!this._peerId || !resolvePeer(wx,this._peerId)) { this.setData({missing:true,loadFailed:false,canSend:false});return }
       let conversation = readConversation(wx, this._peerId)
       let readStateFailed = this.data.readStateFailed

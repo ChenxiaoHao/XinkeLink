@@ -2,6 +2,7 @@ import { TABS } from '../utils/navigation'
 import { unreadTotal } from '../features/contact/badges'
 import { client, Runtime } from '../backend/client'
 import { onIdentityChange } from '../features/profile/identity-events'
+import { getViewerRole } from '../features/profile/viewer'
 
 const selectionRenders = new WeakMap<object, object>()
 const identityUnsubs = new WeakMap<object, Array<() => void>>()
@@ -46,7 +47,11 @@ Component({
     },
     async refreshUnread() {
       try {
-        if ((wx as Runtime).__fixtureMode === true) { this.setData({ unreadCount: unreadTotal(wx) }); return }
+        if ((wx as Runtime).__fixtureMode === true) {
+          // 访客不显示上个登录账号的未读角标（与后端分支按会话判断的行为对齐）。
+          if (getViewerRole(wx) === 'guest') { this.setData({ unreadCount: 0, messageUnread: 0, notificationUnread: 0 }); return }
+          this.setData({ unreadCount: unreadTotal(wx) }); return
+        }
         const api = client(wx)
         const unread = api.loggedIn ? await api.request('/me/unread') : null
         this.setData({ unreadCount: unread?.badgeTotal || 0, messageUnread: unread?.raw?.messages || 0, notificationUnread: (unread?.raw?.comments || 0) + (unread?.raw?.reactions || 0) + (unread?.raw?.announcements || 0) })

@@ -1,11 +1,13 @@
 import { registerPage } from '../../backend/pages'
 import { listConversations } from '../../features/contact/repository'
+import { requireLocalSession } from '../../features/profile/repository'
 
 interface Peer { id: string; nickname: string; avatar: string }
 
 registerPage(wx, Page, 'new-chat')({
   data: { peers: [] as Peer[], visiblePeers: [] as Peer[], query: '', loadFailed: false, authVisible: false, authSaving: false, authError: '' },
-  onShow() { this.reload() },
+  // 访客进入发起对话页：拦截并列出会话之前先弹一键登录，避免看到上个登录账号的会话列表。
+  onShow() { if (!requireLocalSession(wx)) return; this.reload() },
   // 演示模式原来既没有 reload 也没有 onShow，联系人恒空、重试按钮是死链。
   reload() {
     try {
