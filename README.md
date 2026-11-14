@@ -19,3 +19,16 @@
 当前交付、测试证据、实际接入范围及剩余微信/WSS验证事项见[Day 5联调报告](docs/backend/10-day5-integration.md)，接口以[正式API契约](docs/backend/04-api-contract.md)为准。[早期V1前端报告](docs/v1-frontend-verification.md)与[旧接口建议清单](docs/v1-backend-interface-checklist.md)作为历史记录保留。测试夹具与隔离的微信换码测试适配器不属于正式运行模式。
 
 2026-11-11 已移除二手功能及关联数据。当前业务范围为校园社交与社区治理；删除范围、迁移及验证见[二手模块移除数据库报告](docs/backend/19-marketplace-removal-database.md)。
+
+## 交接入口
+
+接手本项目请先读这四份（均为 2026-11-13/14 基于源码全量审查生成，含文件+行号证据）：
+
+1. [项目全貌说明](docs/project-handover.md) —— 架构、技术栈、后端接口全集、数据库 25 张表、Redis 用途、配置与启动、测试现状、**已知问题与待办（按严重度排序）**。
+2. [业务流程逐条走查](docs/business-flows.md) —— 21 条业务流程的双模式逐环节走查、访客隔离现状、身份判定点清单、**24 条缺陷清单**、存储 key 清单、交接检查清单。
+3. [演示模式只读审查报告](BUGS.md) —— wxml 绑定与 fixture 实现的死链扫描结果（6 条，1/2/3 已修复）。
+4. [身份判定审查报告](IDENTITY-RULES.md) —— 访客/本人/他人三态规则表、判定点清单、storage 隔离结论。
+
+**当前状态**：11 个本地提交（最新 `bd4bf88`），工作区干净，仓库**无 remote**。端口四方已统一到 `18081`（`backend/config.ts` / `application.yml` / `vite.config.ts` / `start-backend-dev.ps1`）。前端 `npm run check` 260 条全绿；后端单测 ~130 条（`mvn test`，不需 Docker），集成测试 ~160 条（`mvn -Pdb-integration verify`，需 Docker）。
+
+**⚠️ 后端启动至今未在本机验证成功**：缺 pwsh 7.4、隔离 MySQL 13306 未运行、Redis 16379 未运行、`XINKELINK_JWT_SECRET_BASE64` 未设置。接手后第一件事是补齐这些环境并跑通 `/api/v1/health`。
