@@ -1,7 +1,7 @@
 <view class="app-shell {{opened ? 'app-shell--open' : ''}}" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">
  <view class="account-panel" style="padding-top:{{statusHeight + 22}}px" aria-hidden="{{!opened}}">
   <scroll-view class="account-scroll" scroll-y>
-   <view class="account-top"><image class="account-avatar" src="{{identity.avatar}}" mode="aspectFill" binderror="onIdentityAvatarError" data-route="profile" bindtap="onNavigate"/><button class="account-add" data-route="account" bindtap="onNavigate" aria-label="添加账号"><image src="/assets/icons/x-user-round-plus-ink.png"/></button></view>
+   <view class="account-top"><image class="account-avatar" src="{{identity.avatar}}" mode="aspectFill" binderror="onIdentityAvatarError" data-route="profile" bindtap="onNavigate"/></view>
    <view class="account-name" data-route="profile" bindtap="onNavigate">{{identity.nickname}}</view><text class="account-handle">{{identity.handle ? '@' + identity.handle : '信科 Link'}}</text>
    <view wx:if="{{!loggedIn}}" class="account-login-wrap"><button class="account-login" bindtap="onLoginTap" hover-class="none" aria-label="微信授权登录">微信授权登录</button></view>
    <view class="account-counts"><text class="account-number">{{identity.dynamicCount}}</text><text>动态</text><text class="account-number account-number--second">{{identity.receivedLikeCount}}</text><text>获赞</text></view>

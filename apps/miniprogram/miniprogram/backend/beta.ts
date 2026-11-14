@@ -5,7 +5,7 @@ export const BETA_PAGE = '/pages/beta-access/index'
 export const DEFAULT_BETA_TARGET = '/pages/forum/index'
 // Only registered business pages may be restored after login. The gate cannot target itself.
 const destinations = new Set(['forum', 'contact', 'profile', 'forum-detail', 'forum-publish', 'contact-chat', 'my-posts',
-  'my-collections', 'profile-edit', 'user-home', 'search', 'report', 'chat-settings', 'feedback', 'notifications', 'ai', 'drafts', 'new-chat', 'account-feature'])
+  'my-collections', 'profile-edit', 'user-home', 'search', 'report', 'chat-settings', 'feedback', 'notifications', 'ai', 'drafts', 'new-chat'])
 export function safeBetaTarget(value: unknown): string {
   if (typeof value !== 'string' || value.length > 2048 || /[\\#\u0000-\u001f\u007f]/.test(value)) return DEFAULT_BETA_TARGET
   const match = /^\/pages\/([a-z-]+)\/index(?:\?([^?]*))?$/.exec(value)

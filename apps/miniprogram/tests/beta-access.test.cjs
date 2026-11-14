@@ -3,10 +3,12 @@ const assert = require('node:assert/strict');
 const { loadPage } = require('./page-harness.cjs');
 const { client } = require('../.test-dist/backend/client.js');
 const sessionKey = 'xinkelink.backend.session.v1';
-test('new chat and account feature are safe beta return destinations',()=>{
+test('registered pages are safe beta return destinations',()=>{
  const {safeBetaTarget}=require('../.test-dist/backend/beta.js');
- for(const route of ['/pages/new-chat/index','/pages/account-feature/index?section=lists'])assert.equal(safeBetaTarget(route),route);
+ for(const route of ['/pages/new-chat/index','/pages/drafts/index','/pages/feedback/index'])assert.equal(safeBetaTarget(route),route);
  assert.equal(safeBetaTarget('/pages/new-chat/index#injected'),'/pages/forum/index');
+ // account-feature 页面已下线，不再是合法的登录后回跳目标。
+ assert.equal(safeBetaTarget('/pages/account-feature/index'),'/pages/forum/index');
 });
 const ok = (o, data) => o.success({ statusCode: 200, data: { code: 'OK', data } });
 const failure = (o, statusCode, code, message = '请求未完成') => o.success({ statusCode, data: { code, message } });

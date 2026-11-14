@@ -18,8 +18,7 @@
     "pages/notifications/index",
     "pages/ai/index",
     "pages/drafts/index",
-    "pages/new-chat/index",
-    "pages/account-feature/index"
+    "pages/new-chat/index"
   ],
   "window": {
     "navigationStyle": "custom",

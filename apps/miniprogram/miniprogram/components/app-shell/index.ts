@@ -128,6 +128,6 @@ Component({
   setTabShift(open:boolean){const pages=getCurrentPages();pages[pages.length-1]?.getTabBar?.()?.setData({drawerVisible:open})},
   stopTap(){},onTouchStart(e:WechatMiniprogram.TouchEvent){this.setData({startX:e.changedTouches[0].clientX,startY:e.changedTouches[0].clientY})},
   onTouchEnd(e:WechatMiniprogram.TouchEvent){const dx=e.changedTouches[0].clientX-this.data.startX,dy=e.changedTouches[0].clientY-this.data.startY;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){if(dx<0)this.closeDrawer();else if(this.data.startX<24)this.openDrawer()}},
-  onNavigate(e:WechatMiniprogram.TouchEvent){const route=e.currentTarget.dataset.route;if(!['profile','account'].includes(route))return;this.closeDrawer();wx.navigateTo({url:route==='profile'?'/pages/profile/index':'/pages/account-feature/index?section=account'})},
+  onNavigate(e:WechatMiniprogram.TouchEvent){const route=e.currentTarget.dataset.route;if(route!=='profile')return;this.closeDrawer();wx.navigateTo({url:'/pages/profile/index'})},
  }
 })

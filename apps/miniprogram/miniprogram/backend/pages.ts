@@ -515,7 +515,6 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
       async reload() { if (!api.loggedIn) { this.setData({ peers: [], loadFailed: false }); return }; try { const conversations = await service.conversations(); this.setData({ peers: conversations.map(item => item.peer), loadFailed: false }); this.filterPeers?.() } catch (error) { this.setData({ peers: [], loadFailed: true }); toast(error) } },
       async onStartChat(event: Json) { const id = event.currentTarget?.dataset?.peerId || event.currentTarget?.dataset?.id || event.detail?.peerId; if (typeof id !== 'string' || !id || id === api.me?.id) return; if (await api.requireSession()) wx.navigateTo({ url: '/pages/contact-chat/index?peerId=' + encodeURIComponent(id) }) },
     }
-    definitions['account-feature'] = { onShow: fixture.onShow, reload() {} }
     definitions.drafts = { onShow: fixture.onShow, reload() {} }
     const implementation = definitions[name]
     if (!implementation) throw new Error('Missing real backend page: ' + name)

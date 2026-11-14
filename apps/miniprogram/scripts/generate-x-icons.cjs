@@ -27,7 +27,6 @@ const aliases = {
   'x-muted': ['x', 'ink'],
   'x-search-muted': ['search', 'muted'],
   'x-settings-ink': ['settings', 'ink'],
-  'x-user-round-plus-ink': ['user-round-plus', 'ink'],
   'x-badge-check-ink': ['badge-check', 'ink'],
   'x-dollar-sign-ink': ['dollar-sign', 'ink'],
   'x-users-ink': ['users', 'ink'],

@@ -48,7 +48,7 @@ D:/CODE/XinKeLink
 1. **wxml 是两套模式共用的**。改 wxml 绑定的方法时，必须确认 fixture 与 implementation 两边都有（历史上多次出现"演示模式死链"，见 `BUGS.md`）。
 2. **演示模式不注入 `common`**，所以每个演示页面必须**自备**：`onPullDownRefresh` / onShow 重载 / 头像 error 兜底 / 访客守卫 / `profile-auth-sheet` 的两个 handler（当前仍缺，见 §7.3）。
 
-### 1.3 页面清单（app.json 注册 20 个，`app.json:2-23`）
+### 1.3 页面清单（app.json 注册 19 个，`app.json:2-22`）
 
 | 页面 | 功能 | 备注 |
 |---|---|---|
@@ -71,7 +71,6 @@ D:/CODE/XinKeLink
 | `pages/ai/index` | Link AI | **本地写作助手**（`features/ai/draft.ts`），确定性整理不联网，免费不限次 |
 | `pages/drafts/index` | 草稿箱 | 已注册、**无任何入口** |
 | `pages/new-chat/index` | 发起私信 | 聊过的同学列表 |
-| `pages/account-feature/index` | 通用说明页 | 抽屉"+"跳转 |
 | `pages/login/index` | — | **未注册 = 死代码**（`pages/login/index.ts:3` 仍调 `registerPage(...,'login')`，但 app.json 无此页；`tests/inline-login.test.cjs` 断言"old login route is unregistered"） |
 
 **tabBar**（`app.json:30-57`）：`custom: true`，5 项 = 首页 / 搜索 / Link AI / 通知 / 私信，与 `custom-tab-bar/index.ts` + `utils/navigation.ts:2-8` 的 `TABS` 一致。
