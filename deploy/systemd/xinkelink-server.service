@@ -1,0 +1,29 @@
+[Unit]
+Description=XinkeLink Java Backend Server
+After=network-online.target mysql.service redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=xinkelink
+Group=xinkelink
+WorkingDirectory=/opt/xinkelink
+EnvironmentFile=/etc/xinkelink/xinkelink.env
+ExecStart=/usr/bin/java \
+  -Xms256m -Xmx512m \
+  -XX:+UseG1GC \
+  -XX:MaxGCPauseMillis=200 \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:HeapDumpPath=/var/log/xinkelink/heapdump.hprof \
+  -Djava.security.egd=file:/dev/./urandom \
+  -jar /opt/xinkelink/xinkelink-server.jar \
+  --spring.profiles.active=db,auth,redis
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+LimitNOFILE=65535
+StandardOutput=append:/var/log/xinkelink/server.log
+StandardError=append:/var/log/xinkelink/server.err.log
+
+[Install]
+WantedBy=multi-user.target
