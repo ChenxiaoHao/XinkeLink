@@ -1,6 +1,5 @@
 {
   "pages": [
-    "pages/beta-access/index",
     "pages/forum/index",
     "pages/contact/index",
     "pages/profile/index",
@@ -18,7 +17,8 @@
     "pages/notifications/index",
     "pages/ai/index",
     "pages/drafts/index",
-    "pages/new-chat/index"
+    "pages/new-chat/index",
+    "pages/legal/index"
   ],
   "window": {
     "navigationStyle": "custom",
@@ -39,10 +39,6 @@
       {
         "pagePath": "pages/search/index",
         "text": "搜索"
-      },
-      {
-        "pagePath": "pages/ai/index",
-        "text": "Link AI"
       },
       {
         "pagePath": "pages/notifications/index",

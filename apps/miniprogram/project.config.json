@@ -33,7 +33,12 @@
     }
   },
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "value": "miniprogram/assets/mock",
+        "type": "folder"
+      }
+    ],
     "include": []
   },
   "condition": {},

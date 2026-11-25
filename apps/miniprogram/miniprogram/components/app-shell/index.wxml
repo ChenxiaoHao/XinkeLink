@@ -1,31 +1,53 @@
 <view class="app-shell {{opened ? 'app-shell--open' : ''}}" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">
- <view class="account-panel" style="padding-top:{{statusHeight + 22}}px" aria-hidden="{{!opened}}">
-  <scroll-view class="account-scroll" scroll-y>
-   <view class="account-top"><image class="account-avatar" src="{{identity.avatar}}" mode="aspectFill" binderror="onIdentityAvatarError" data-route="profile" bindtap="onNavigate"/></view>
-   <view class="account-name" data-route="profile" bindtap="onNavigate">{{identity.nickname}}</view><text class="account-handle">{{identity.handle ? '@' + identity.handle : '信科 Link'}}</text>
-   <view wx:if="{{!loggedIn}}" class="account-login-wrap"><button class="account-login" bindtap="onLoginTap" hover-class="none" aria-label="微信授权登录">微信授权登录</button></view>
-   <view class="account-counts"><text class="account-number">{{identity.dynamicCount}}</text><text>动态</text><text class="account-number account-number--second">{{identity.receivedLikeCount}}</text><text>获赞</text></view>
-   <!-- 主列表：与 X 抽屉一致，所有行同字号(22/750)同高(54)同图标(26)。 -->
-   <view class="account-links">
-    <button class="account-row" data-route="profile" bindtap="onNavigate" hover-class="account-row--pressed"><image src="/assets/icons/x-user-round-ink.png"/><text>个人资料</text></button>
-    <button class="account-row" bindtap="onNotifyToggle" hover-class="account-row--pressed"><image src="/assets/icons/x-bell-ink.png"/><text>通知设置</text><text class="account-value">{{notifySummary}}</text><image class="account-chevron {{notifyOpen ? 'account-chevron--open' : ''}}" src="/assets/icons/x-chevron-down-ink.png"/></button>
-    <view wx:if="{{notifyOpen}}" class="account-prefs">
-     <view class="pref-row"><view class="pref-copy"><text class="pref-title">私信提醒</text><text class="pref-note">同学发来的私信提醒</text></view><switch checked="{{preferences.messages}}" data-key="messages" bindchange="onPreferenceChange" color="#0f1419" aria-label="私信提醒" /></view>
-     <view class="pref-row"><view class="pref-copy"><text class="pref-title">互动提醒</text><text class="pref-note">评论、回复与点赞</text></view><switch checked="{{preferences.interactions}}" data-key="interactions" bindchange="onPreferenceChange" color="#0f1419" aria-label="互动提醒" /></view>
-     <view class="pref-row"><view class="pref-copy"><text class="pref-title">平台公告提醒</text><text class="pref-note">平台公告与社区消息</text></view><switch checked="{{preferences.announcements}}" data-key="announcements" bindchange="onPreferenceChange" color="#0f1419" aria-label="平台公告提醒" /></view>
-     <view class="pref-row"><view class="pref-copy"><text class="pref-title">声音提醒</text><text class="pref-note">站内提醒的声音偏好</text></view><switch checked="{{preferences.sound}}" data-key="sound" bindchange="onPreferenceChange" color="#0f1419" aria-label="声音提醒" /></view>
-     <text class="pref-foot">仅控制站内提醒偏好，不会开启系统推送或订阅消息。</text>
-    </view>
-    <button class="account-row" bindtap="onPrivacyTap" hover-class="account-row--pressed"><image src="/assets/icons/x-file-ink.png"/><text>资料与隐私说明</text></button>
-    <button class="account-row" bindtap="onFeedbackTap" hover-class="account-row--pressed"><image src="/assets/icons/x-message-circle-ink.png"/><text>意见反馈</text></button>
-    <button class="account-row" bindtap="onAboutTap" hover-class="account-row--pressed"><image src="/assets/icons/x-info-ink.png"/><text>关于信科 Link</text><text class="account-value">V1.0.0</text></button>
-   </view>
-   <view class="account-secondary">
-    <button wx:if="{{loggedIn}}" class="account-secondary-item" bindtap="onLogoutTap" hover-class="account-secondary-item--pressed">退出登录</button>
-   </view>
-   <view class="account-footer">信科 Link · 校内论坛 · v1.0.0</view>
-  </scroll-view>
- </view>
- <view class="shell-content {{opened ? 'shell-content--shifted' : ''}}" bind:profilemenu="openDrawer"><slot/><view wx:if="{{opened}}" class="shell-dismiss" catchtap="closeDrawer" catchtouchmove="stopTap"/></view>
- <profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onAuthConfirm" bind:cancel="onAuthCancel" />
+  <view wx:if="{{opened}}" class="account-panel" style="padding-top:{{statusHeight + 18}}px">
+    <scroll-view class="account-scroll" scroll-y>
+      <view class="account-top">
+        <image class="account-avatar" src="{{identity.avatar}}" data-source="{{identity.avatar}}" mode="aspectFill" binderror="onIdentityAvatarError" data-route="profile" bindtap="onNavigate" />
+      </view>
+      <view class="account-name" data-route="profile" bindtap="onNavigate">{{loggedIn ? identity.nickname : '访客模式'}}</view>
+      <text class="account-handle">{{loggedIn ? (identity.handle ? '@' + identity.handle : '信科 Link') : '登录后可发帖、点赞与私信同学'}}</text>
+      <view wx:if="{{!loggedIn}}" class="account-login-wrap">
+        <button class="account-login" bindtap="onLoginTap" hover-class="none" aria-label="微信授权登录">微信授权登录</button>
+      </view>
+      <view wx:if="{{loggedIn}}" class="account-counts">
+        <text class="account-number">{{identity.dynamicCount}}</text><text>动态</text>
+        <text class="account-number account-number--second">{{identity.receivedLikeCount}}</text><text>获赞</text>
+      </view>
+      <view class="account-links {{!loggedIn ? 'account-links--guest' : ''}}">
+        <button wx:if="{{loggedIn}}" class="account-row" data-route="profile" bindtap="onNavigate" hover-class="account-row--pressed">
+          <image class="account-row-icon" src="/assets/icons/x-user-round-ink.png" /><text>个人资料</text>
+        </button>
+        <button wx:if="{{loggedIn}}" class="account-row" data-route="my-posts" bindtap="onNavigate" hover-class="account-row--pressed">
+          <image class="account-row-icon" src="/assets/icons/x-notebook-pen-ink.png" /><text>我的帖子</text>
+        </button>
+        <button wx:if="{{loggedIn}}" class="account-row" bindtap="onNotifyToggle" hover-class="account-row--pressed">
+          <image class="account-row-icon" src="/assets/icons/x-bell-ink.png" /><text>通知设置</text><text class="account-value">{{notifySummary}}</text><image class="account-row-icon account-chevron {{notifyOpen ? 'account-chevron--open' : ''}}" src="/assets/icons/x-chevron-down-ink.png" />
+        </button>
+        <view wx:if="{{loggedIn && notifyOpen}}" class="account-prefs">
+          <view class="pref-row"><text class="pref-title">私信提醒</text><switch checked="{{preferences.messages}}" data-key="messages" bindchange="onPreferenceChange" color="#0f1419" aria-label="私信提醒" /></view>
+          <view class="pref-row"><text class="pref-title">互动提醒</text><switch checked="{{preferences.interactions}}" data-key="interactions" bindchange="onPreferenceChange" color="#0f1419" aria-label="互动提醒" /></view>
+          <view class="pref-row"><text class="pref-title">平台公告提醒</text><switch checked="{{preferences.announcements}}" data-key="announcements" bindchange="onPreferenceChange" color="#0f1419" aria-label="平台公告提醒" /></view>
+          <view class="pref-row"><text class="pref-title">声音提醒</text><switch checked="{{preferences.sound}}" data-key="sound" bindchange="onPreferenceChange" color="#0f1419" aria-label="声音提醒" /></view>
+        </view>
+        <button class="account-row" bindtap="onPrivacyTap" hover-class="account-row--pressed">
+          <image class="account-row-icon" src="/assets/icons/x-file-ink.png" /><text>用户协议与隐私政策</text>
+        </button>
+        <button class="account-row" bindtap="onFeedbackTap" hover-class="account-row--pressed">
+          <image class="account-row-icon" src="/assets/icons/x-message-circle-ink.png" /><text>意见反馈</text>
+        </button>
+        <button class="account-row" bindtap="onAboutTap" hover-class="account-row--pressed">
+          <image class="account-row-icon" src="/assets/icons/x-info-ink.png" /><text>关于信科 Link</text>
+        </button>
+      </view>
+      <view wx:if="{{loggedIn}}" class="account-secondary">
+        <button class="account-secondary-item" bindtap="onLogoutTap" hover-class="account-secondary-item--pressed">退出登录</button>
+      </view>
+      <view class="account-footer">信科 Link · 校内论坛 · v1.0.0</view>
+    </scroll-view>
+  </view>
+  <view class="shell-content {{opened ? 'shell-content--shifted' : ''}}" bind:profilemenu="openDrawer">
+    <slot />
+    <view wx:if="{{opened}}" class="shell-dismiss" catchtap="closeDrawer" catchtouchmove="stopTap" />
+  </view>
+  <profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onAuthConfirm" bind:cancel="onAuthCancel" />
 </view>

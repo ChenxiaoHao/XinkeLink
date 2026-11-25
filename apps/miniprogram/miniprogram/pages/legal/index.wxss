@@ -1,0 +1,90 @@
+.legal-page {
+  min-height: 100vh;
+  background: #ffffff;
+  color: #0f1419;
+  display: flex;
+  flex-direction: column;
+}
+
+.legal-tabs {
+  display: flex;
+  border-bottom: 1rpx solid #eff3f4;
+  padding: 0 32rpx;
+  gap: 24rpx;
+}
+
+.legal-tab {
+  flex: 1;
+  margin: 0;
+  padding: 24rpx 0;
+  background: transparent;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #536471;
+  border-radius: 0;
+  border-bottom: 4rpx solid transparent;
+  line-height: 1.4;
+}
+
+.legal-tab::after {
+  border: 0;
+}
+
+.legal-tab--active {
+  color: #0f1419;
+  font-weight: 700;
+  border-bottom-color: #0f1419;
+}
+
+.legal-body {
+  flex: 1;
+  box-sizing: border-box;
+  padding: 32rpx 36rpx calc(48rpx + env(safe-area-inset-bottom));
+}
+
+.legal-heading {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #0f1419;
+  margin-bottom: 12rpx;
+}
+
+.legal-meta {
+  display: block;
+  font-size: 24rpx;
+  color: #536471;
+  margin-bottom: 32rpx;
+}
+
+.legal-section {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #0f1419;
+  margin: 28rpx 0 12rpx;
+}
+
+.legal-text {
+  display: block;
+  font-size: 27rpx;
+  line-height: 1.7;
+  color: #2c3640;
+  white-space: pre-line;
+}
+
+.legal-wechat-btn {
+  margin-top: 40rpx;
+  width: 100%;
+  border-radius: 999px;
+  background: #f7f9f9;
+  color: #0f1419;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 84rpx;
+  border: 1rpx solid #cfd9de;
+}
+
+.legal-wechat-btn::after {
+  border: 0;
+}

@@ -1,0 +1,48 @@
+<back-header title="{{tab === 'terms' ? '用户协议' : '隐私政策'}}" fallback="/pages/forum/index" />
+<view class="legal-page">
+  <view class="legal-tabs">
+    <button class="legal-tab {{tab === 'terms' ? 'legal-tab--active' : ''}}" data-tab="terms" bindtap="onTabTap" hover-class="none">用户协议</button>
+    <button class="legal-tab {{tab === 'privacy' ? 'legal-tab--active' : ''}}" data-tab="privacy" bindtap="onTabTap" hover-class="none">隐私政策</button>
+  </view>
+
+  <scroll-view wx:if="{{tab === 'terms'}}" class="legal-body" scroll-y>
+    <text class="legal-heading">信科 Link 用户服务协议</text>
+    <text class="legal-meta">更新日期：2026 年 11 月 25 日 · 适用于信科 Link 微信小程序</text>
+
+    <text class="legal-section">1. 平台定位与身份说明</text>
+    <text class="legal-text">信科 Link 是面向河南信息科技学院学生的校园社交社区，非学校官方网站或官方认证系统。用户自填的专业、班级、入学年份等资料仅用于校园交流展示，不代表学校或平台核实认证。</text>
+
+    <text class="legal-section">2. 账号使用规范</text>
+    <text class="legal-text">您通过微信授权登录后即可使用发帖、评论、点赞、私信、举报与反馈功能。请妥善保管个人微信账号，不得借用、冒充他人身份或批量注册恶意账号。</text>
+
+    <text class="legal-section">3. 社区内容行为准则</text>
+    <text class="legal-text">您在平台发布的所有文字、图片、评论、私信及个人资料必须遵守国家法律法规与校园公序良俗。严禁发布违法违规、色情低俗、暴力恐怖、赌博诈骗、人身攻击、侵犯他人隐私、虚假广告、代写代考、刷课作弊及其他违规内容。</text>
+
+    <text class="legal-section">4. 内容审核与社区治理</text>
+    <text class="legal-text">平台接入自动化文本安全检测、敏感词过滤及人工举报审核机制。对于涉嫌违规的内容或账号，平台有权采取拦截、隐藏、删除、限制发言/私信或临时/永久封禁账号等处置措施，并保留必要治理日志。</text>
+
+    <text class="legal-section">5. 举报与反馈</text>
+    <text class="legal-text">如发现违规内容或侵权行为，您可通过页面内的「举报」或「意见反馈」入口提交处理，平台将在合理时间内核查处置。</text>
+  </scroll-view>
+
+  <scroll-view wx:if="{{tab === 'privacy'}}" class="legal-body" scroll-y>
+    <text class="legal-heading">信科 Link 隐私保护政策</text>
+    <text class="legal-meta">更新日期：2026 年 11 月 25 日 · 适用于信科 Link 微信小程序</text>
+
+    <text class="legal-section">1. 我们收集的信息及用途</text>
+    <text class="legal-text">• 微信登录标识（OpenID）：用于为您创建并识别平台账号，维护登录会话安全。\n• 头像与昵称：在您主动选择并确认后，用于个人主页、发帖、评论与私信展示。\n• 自填校园资料（简介、专业、班级、入学年份）：由您自愿填写并展示在公开主页；您可随时编辑或清空。\n• 帖子、评论、图片、私信与举报记录：用于实现社区内容发布、互动与合规治理。\n• 相册/图片选择权限：仅在您主动上传头像或发帖配图时调用。\n• 剪贴板权限：仅在您主动点击复制信息时调用。</text>
+
+    <text class="legal-section">2. 仅保存在本机的信息</text>
+    <text class="legal-text">您的自填学号、搜索历史与发帖草稿仅保存在您当前设备的本地存储中，不会上传至服务端，也不会在公开主页向他人展示。</text>
+
+    <text class="legal-section">3. 信息存储与安全</text>
+    <text class="legal-text">我们采用 HTTPS/WSS 加密传输、最小权限访问控制、短期图片访问授权及内容安全检测机制保护您的数据安全。我们不会向任何无关第三方出售或非法提供您的个人信息。</text>
+
+    <text class="legal-section">4. 您的权利与联系方式</text>
+    <text class="legal-text">您可随时在小程序内查看、修改个人资料，删除您发布的帖子，管理通知偏好或退出登录。如有隐私疑问或注销需求，可通过抽屉内「意见反馈」联系平台管理员处理。</text>
+
+    <button class="legal-wechat-btn" bindtap="onOpenWechatPrivacy" hover-class="none">查看微信官方隐私保护指引</button>
+  </scroll-view>
+</view>
+
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

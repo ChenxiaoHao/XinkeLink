@@ -15,6 +15,10 @@ Component({
       if (!this.data.busy && event.detail.avatarUrl) this.setData({ avatarPath: event.detail.avatarUrl })
     },
     onCancel() { if (!this.data.busy) this.triggerEvent('cancel') },
+    onLegalTap(event: WechatMiniprogram.TouchEvent) {
+      const tab = event.currentTarget.dataset.tab === 'terms' ? 'terms' : 'privacy'
+      wx.navigateTo({ url: `/pages/legal/index?tab=${tab}`, fail() { wx.showToast({ title: '协议页面暂时无法打开', icon: 'none' }) } })
+    },
     onConfirm(event: WechatMiniprogram.CustomEvent<{ value: { nickname: string } }>) {
       if (this.data.busy) return
       // 使用form收集微信昵称控件最终值，避免绕过原生内容检查后的清空结果。
