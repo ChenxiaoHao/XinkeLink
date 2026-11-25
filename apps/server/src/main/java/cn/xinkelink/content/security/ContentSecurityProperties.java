@@ -10,8 +10,8 @@ public record ContentSecurityProperties(
         String callbackToken,
         String publicBaseUrl) {
 
-    public ContentSecurityProperties(boolean wechatEnabled, boolean failOpen) {
-        this(wechatEnabled, failOpen, false, "", "");
+    public static ContentSecurityProperties textOnly(boolean wechatEnabled, boolean failOpen) {
+        return new ContentSecurityProperties(wechatEnabled, failOpen, false, "", "");
     }
 
     @Override

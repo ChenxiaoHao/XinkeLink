@@ -35,7 +35,7 @@ class ContentSecurityServiceTest {
         WechatContentSecurityClient wechat = mock(WechatContentSecurityClient.class);
 
         ContentSecurityService service = new ContentSecurityService(
-                jdbc, JSON, new ContentSecurityProperties(false, false), wechat, FIXED_CLOCK);
+                jdbc, JSON, new ContentSecurityProperties(false, false, false, "", ""), wechat, FIXED_CLOCK);
 
         service.checkText(1L, ContentScene.FORUM, "今天图书馆二楼有空位");
 
@@ -62,7 +62,7 @@ class ContentSecurityServiceTest {
                 .thenReturn(List.of(Map.of("value_json", "{\"sensitiveWordIntercept\":true,\"sensitiveWords\":[\"测试违禁词\"]}")));
 
         ContentSecurityService service = new ContentSecurityService(
-                jdbc, JSON, new ContentSecurityProperties(false, false), null, FIXED_CLOCK);
+                jdbc, JSON, new ContentSecurityProperties(false, false, false, "", ""), null, FIXED_CLOCK);
 
         assertDoesNotThrow(() -> service.checkText(1L, ContentScene.FORUM, "包含测试违禁词"));
 
@@ -85,7 +85,7 @@ class ContentSecurityServiceTest {
                 .when(wechat).checkText("openid-42", ContentScene.PROFILE, "违规昵称");
 
         ContentSecurityService service = new ContentSecurityService(
-                jdbc, JSON, new ContentSecurityProperties(true, false), wechat, FIXED_CLOCK);
+                jdbc, JSON, new ContentSecurityProperties(true, false, false, "", ""), wechat, FIXED_CLOCK);
 
         service.checkText(42L, ContentScene.PROFILE, "正常昵称");
         verify(wechat).checkText("openid-42", ContentScene.PROFILE, "正常昵称");
@@ -101,7 +101,7 @@ class ContentSecurityServiceTest {
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         OfficialWechatContentSecurityClient client = new OfficialWechatContentSecurityClient(
                 new WechatProperties("wx-test", "secret-test"),
-                new ContentSecurityProperties(true, false),
+                new ContentSecurityProperties(true, false, false, "", ""),
                 builder.build(),
                 null,
                 JSON);
