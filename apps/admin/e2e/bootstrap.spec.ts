@@ -13,6 +13,20 @@ test('menu navigation starts the next page at the top of its independent scroll 
   await expect.poll(() => page.locator('.main-scroll').evaluate(element => element.scrollTop)).toBe(0)
 })
 
+test('retired features are absent from navigation and old bookmarks land on the dashboard', async ({ page }) => {
+  await enterDemo(page)
+  await expect(page.getByRole('link', { name: /内测|福袋/ })).toHaveCount(0)
+  const search = page.getByRole('textbox', { name: '搜索管理菜单' })
+  for (const keyword of ['内测', '福袋']) {
+    await search.fill(keyword)
+    await expect(page.getByText('没有匹配的管理菜单')).toBeVisible()
+  }
+  for (const path of ['/admin/beta', '/admin/lucky-bags']) {
+    await page.goto(path)
+    await expect(page).toHaveURL(/\/admin\/dashboard$/)
+  }
+})
+
 async function enterDemo(page: import('@playwright/test').Page) {
   await page.goto('/admin/dashboard')
   await expect(page).toHaveURL(/\/login\?redirect=/)

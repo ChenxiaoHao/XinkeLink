@@ -5,6 +5,10 @@ import { useAdminAuthStore } from '../src/stores/admin-auth'
 import { adminHttp } from '../src/services/admin-http'
 import { createAdminRouter } from '../src/router'
 
+vi.mock('../src/components/admin/AdminLayout.vue', () => ({ default: {} }))
+vi.mock('../src/views/DashboardView.vue', () => ({ default: {} }))
+vi.mock('../src/views/LoginView.vue', () => ({ default: {} }))
+
 describe('protected administrator routes', () => {
   beforeEach(() => {
     adminHttp.clear()
@@ -67,15 +71,14 @@ describe('protected administrator routes', () => {
     expect(settings?.components?.default).not.toBeUndefined()
   })
 
-  it('protects beta management and gives it a real management view', async () => {
+  it.each(['/admin/beta', '/admin/lucky-bags'])('redirects retired page %s through the protected dashboard', async path => {
     const pinia = createPinia()
     const router = createAdminRouter(pinia, createMemoryHistory())
-    await router.push('/admin/beta')
+    await router.push(path)
     expect(router.currentRoute.value.name).toBe('login')
-    expect(router.currentRoute.value.query.redirect).toBe('/admin/beta')
+    expect(router.currentRoute.value.query.redirect).toBe('/admin/dashboard')
     await useAdminAuthStore(pinia).signIn('manager', 'demo-password', false)
-    await router.push('/admin/beta')
-    expect(router.currentRoute.value.name).toBe('beta')
-    expect(router.currentRoute.value.meta.development).toBe(false)
+    await router.push(path)
+    expect(router.currentRoute.value.name).toBe('dashboard')
   })
 })

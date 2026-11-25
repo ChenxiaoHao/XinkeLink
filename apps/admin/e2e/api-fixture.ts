@@ -54,7 +54,6 @@ async function installApiFixture(page: Page) {
     if (module === 'auth') { if (id === 'logout') { authenticated = false; return send({ revoked: true }) } authenticated = true; return send({ admin, accessToken: 'fixture-access', csrfToken: 'fixture-csrf', expiresIn: 900 }) }
     if (!authenticated) return reject(401, 'UNAUTHENTICATED')
     if (module === 'me') return send(admin)
-    if (module === 'beta' && method === 'GET') return send({ phase: 'open', version: 0, total: 0, used: 0, remaining: 0, codes: [] })
     if (module === 'dashboard') return send({ asOf: new Date().toISOString(), range: q.range, rangeStart: new Date().toISOString(), rangeEnd: new Date().toISOString(), metrics: { totalUsers: 3842, todayPosts: 146, pendingReports: 7 }, trends: [{ date: '2026-10-24', postCount: 2, dau: null }, { date: '2026-10-25', postCount: 5, dau: null }], todos: [], unavailableMetrics: [], recentActivity: ['post', 'comment', 'report', 'announcement'].map((kind, index) => ({ id: String(index), kind, summary: '测试业务动态', createdAt: new Date().toISOString(), target: { kind, id: String(index) } })) })
     try {
       const expected = body.expectedVersion ?? (request.headers()['if-match'] ? Number(request.headers()['if-match']!.replaceAll('"', '')) : undefined)

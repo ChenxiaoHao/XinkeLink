@@ -1,7 +1,7 @@
 <view class="back-header" style="padding-top: {{statusHeight}}px;">
   <view class="back-header-row" style="height: {{navigationHeight}}px; padding-right: {{rightSpace}}px;">
-    <button class="back-header-button" bindtap="onBack" aria-label="返回"><image src="/assets/icons/chevron-left-muted.png" mode="aspectFit" /></button>
+    <button class="back-header-button" bindtap="onBack" aria-label="返回"><image class="back-header-icon" src="/assets/icons/chevron-left-muted.png" mode="aspectFit" /></button>
     <text class="back-header-title">{{title}}</text>
-    <button wx:if="{{actionLabel}}" class="back-header-action" bindtap="onAction" loading="{{busy}}" disabled="{{busy}}">{{actionLabel}}</button>
+    <button wx:if="{{actionLabel}}" class="back-header-action {{busy ? 'back-header-action--busy' : ''}}" bindtap="onAction" loading="{{busy}}" disabled="{{busy}}">{{actionLabel}}</button>
   </view>
 </view>

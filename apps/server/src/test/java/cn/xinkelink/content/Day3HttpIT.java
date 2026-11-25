@@ -35,10 +35,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"db","auth"})
 class Day3HttpIT {
-    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
-    cn.xinkelink.beta.BetaService platformPhase;
-    // Business regressions run in the public phase; beta access has its own integration suite.
-    @org.junit.jupiter.api.BeforeEach void publicPlatformFixture(){org.mockito.Mockito.doReturn(false).when(platformPhase).isBeta();}
 
     @Value("${local.server.port}") int port;
     @Autowired AuthService auth;
@@ -54,6 +50,7 @@ class Day3HttpIT {
         String secret=Base64.getEncoder().encodeToString(key);
         registry.add("xinkelink.auth.jwt.secret-base64",()->secret);
         registry.add("spring.data.redis.port",()->16379);
+        registry.add("xinkelink.statistics.enabled",()->false);
     }
     @BeforeEach void fixture(){author=actor();reader=actor();}
     private UserTokens actor(){
@@ -66,6 +63,8 @@ class Day3HttpIT {
                 "anonymous",true,"imageIds",List.of(),"clientRequestId",UUID.randomUUID().toString()),author),201);
         String id=created.get("id").stringValue(),path="/api/v1/posts/"+id;
         JsonNode publicPost=data(call("GET",path,null,null),200);
+        assertTrue(publicPost.path("viewReportingEnabled").isBoolean());
+        assertFalse(publicPost.path("viewReportingEnabled").booleanValue());
         assertTrue(publicPost.at("/author/id").isNull());
         assertTrue(publicPost.at("/author/isAnonymous").booleanValue());
         JsonNode root=data(call("POST",path+"/comments",Map.of("content","一级评论","clientRequestId",UUID.randomUUID().toString()),reader),201).get("comment");
@@ -126,8 +125,16 @@ class Day3HttpIT {
         assertEquals(5,counts.get("cn.xinkelink.profile"));
         assertEquals(3,counts.get("cn.xinkelink.audit"));
         assertEquals(3,counts.get("cn.xinkelink.settings"));
-        assertEquals(5,counts.get("cn.xinkelink.beta"));
-        assertEquals(104,counts.values().stream().mapToInt(Integer::intValue).sum());
+        assertFalse(counts.containsKey("cn.xinkelink.beta"));
+        assertEquals(3,counts.get("cn.xinkelink.statistics"));
+        assertFalse(counts.containsKey("cn.xinkelink.luckybag"));
+        assertEquals(5,counts.get("cn.xinkelink.ai"));
+        assertEquals(7,counts.get("cn.xinkelink.ai.knowledge"));
+        assertEquals(114,counts.values().stream().mapToInt(Integer::intValue).sum());
+        assertTrue(routes.getHandlerMethods().keySet().stream().flatMap(route->route.getPatternValues().stream())
+                .noneMatch(path->path.matches("/api/v1(?:/admin|/me)?/(?:beta|lucky-bags)(?:/.*)?")));
+        Set<String> statistics=Set.of("/api/v1/statistics/anonymous-credential","/api/v1/statistics/post-views","/api/v1/posts/view-ranking");
+        assertTrue(statistics.stream().allMatch(path->routes.getHandlerMethods().keySet().stream().anyMatch(route->route.getPatternValues().contains(path))));
         Set<String> day5=Set.of("/api/v1/admin/posts","/api/v1/admin/comments",
                 "/api/v1/admin/users","/api/v1/admin/dashboard","/api/v1/admin/settings","/api/v1/admin/audit-events");
         assertTrue(day5.stream().allMatch(path->routes.getHandlerMethods().keySet().stream().anyMatch(route->route.getPatternValues().contains(path))));

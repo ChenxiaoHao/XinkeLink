@@ -11,7 +11,7 @@
    </view>
   </view>
   <view class="x-band"></view>
-  <view class="trends-head"><text class="trends-title">热榜</text><text class="trends-note">当周 · 按点赞</text></view>
+  <view class="trends-head"><text class="trends-title">近7日浏览热榜</text><text class="trends-note">按访客数</text></view>
   <view wx:for="{{hot}}" wx:key="id" class="trend" data-id="{{item.id}}" bindtap="onHotTap" hover-class="trend--pressed">
    <view class="trend-copy">
     <text class="trend-context">{{item.rank}} · {{item.categoryLabel}} · 热榜</text>
@@ -20,7 +20,9 @@
    </view>
    <image class="trend-more" src="/assets/icons/x-ellipsis-muted.png" aria-hidden="true"/>
   </view>
-  <view wx:if="{{hotFailed}}" class="x-load"><text>热门暂时无法加载</text><button bindtap="readHot">重试</button></view>
-  <view wx:elif="{{!hot.length}}" class="x-load"><text>还没有热门帖子</text><text>点赞多了就会排到这里。</text></view>
+  <view wx:if="{{hotLoading}}" class="x-load">正在加载浏览热榜</view>
+  <view wx:elif="{{hotFailed}}" class="x-load"><text>浏览热榜暂时无法加载</text><button bindtap="readHot">重试</button></view>
+  <view wx:elif="{{!hot.length}}" class="x-load"><text>{{hotAvailable ? '近7日暂无浏览热榜' : '暂无浏览统计'}}</text><text>按北京时间今日及之前6个自然日统计。</text></view>
+  <view wx:elif="{{hotWindow}}" class="x-load"><text>{{hotWindow}} · 北京时间</text></view>
  </block></view>
  </app-shell><profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel"/>

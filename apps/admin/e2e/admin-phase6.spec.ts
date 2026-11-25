@@ -62,7 +62,7 @@ test('operation log shows audited management events, filters, details and export
 })
 
 test('operation log keeps sidebar and topbar fixed while its right content scrolls at 1440px', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 760 })
+  await page.setViewportSize({ width: 1440, height: 460 })
   await enterDemo(page, '/admin/logs')
   await page.getByRole('link', { name: '帖子管理' }).click()
   await page.getByRole('button', { name: '隐藏帖子' }).first().click()
@@ -74,6 +74,7 @@ test('operation log keeps sidebar and topbar fixed while its right content scrol
   const sidebarBefore = (await sidebar.boundingBox())?.y
   expect(await main.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
   await main.evaluate(element => { element.scrollTop = 500 })
+  expect(await main.evaluate(element => element.scrollTop)).toBeGreaterThan(0)
   expect(await page.evaluate(() => document.documentElement.scrollTop)).toBe(0)
   expect((await topbar.boundingBox())?.y).toBe(topBefore)
   expect((await sidebar.boundingBox())?.y).toBe(sidebarBefore)
@@ -92,7 +93,8 @@ test('system settings edits local review configuration, confirms reset and reset
   await page.screenshot({ path: path.join(screenshotDir, 'system-settings-1440.png'), animations: 'disabled' })
 
   await page.locator('.settings-control-row').filter({ hasText: '夜间自动队列模式' }).locator('.el-switch').click()
-  await page.getByRole('radio', { name: /^高严（严格拦截）/ }).check()
+  await page.getByText('高严（严格拦截）', { exact: true }).click()
+  await expect(page.getByRole('radio', { name: /^高严（严格拦截）/ })).toBeChecked()
   await page.getByRole('textbox', { name: '新增审核关键词' }).fill('phase6-keyword')
   await page.getByTestId('settings-add-keyword').click()
   await page.getByTestId('settings-save').click()

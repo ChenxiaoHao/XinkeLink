@@ -4,12 +4,14 @@ import cn.xinkelink.auth.AuthPrincipal;
 import cn.xinkelink.common.api.ApiResponse;
 import cn.xinkelink.common.api.CursorPage;
 import cn.xinkelink.content.ContentSupport;
+import cn.xinkelink.statistics.ViewStatisticsProperties;
 import jakarta.validation.Valid;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static cn.xinkelink.forum.ForumModels.*;
@@ -18,7 +20,11 @@ import static cn.xinkelink.forum.ForumModels.*;
 @Profile("auth")
 public class ForumController {
     private final ForumService service;
-    public ForumController(ForumService service) { this.service = service; }
+    private final ViewStatisticsProperties statistics;
+    public ForumController(ForumService service, ViewStatisticsProperties statistics) {
+        this.service = service;
+        this.statistics = statistics;
+    }
 
     @GetMapping("/api/v1/posts")
     ApiResponse<CursorPage<Map<String, Object>>> list(@RequestParam(required = false) String category,
@@ -36,7 +42,9 @@ public class ForumController {
 
     @GetMapping("/api/v1/posts/{postId}")
     ApiResponse<Map<String, Object>> detail(@PathVariable String postId, @AuthenticationPrincipal AuthPrincipal viewer) {
-        return ApiResponse.success(service.detail(ContentSupport.id(postId), viewer));
+        var detail = new LinkedHashMap<>(service.detail(ContentSupport.id(postId), viewer));
+        detail.put("viewReportingEnabled", statistics.isEnabled());
+        return ApiResponse.success(detail);
     }
 
     @PatchMapping("/api/v1/posts/{postId}")

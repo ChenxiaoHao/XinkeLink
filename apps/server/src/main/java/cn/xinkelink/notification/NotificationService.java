@@ -5,6 +5,9 @@ import cn.xinkelink.common.api.*;
 import cn.xinkelink.content.ContentCursor;
 import cn.xinkelink.content.ContentSupport;
 import cn.xinkelink.realtime.RealtimeEvents;
+import cn.xinkelink.notification.mq.InteractionEvent;
+import cn.xinkelink.notification.mq.InteractionJournal;
+import cn.xinkelink.notification.mq.NotificationMqProperties;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -21,8 +24,11 @@ public class NotificationService {
     private final ContentSupport support;
     private final ContentCursor cursors;
     private final RealtimeEvents events;
-    public NotificationService(NotificationMapper mapper,ContentSupport support,ContentCursor cursors,RealtimeEvents events){
-        this.mapper=mapper;this.support=support;this.cursors=cursors;this.events=events;
+    private final InteractionJournal journal;
+    private final NotificationMqProperties delivery;
+    public NotificationService(NotificationMapper mapper,ContentSupport support,ContentCursor cursors,RealtimeEvents events,
+                               InteractionJournal journal,NotificationMqProperties delivery){
+        this.mapper=mapper;this.support=support;this.cursors=cursors;this.events=events;this.journal=journal;this.delivery=delivery;
     }
     public Map<String,Object> unread(AuthPrincipal viewer){return unreadFor(support.require(viewer,null));}
     /** 仅供已核实成员/接收者的内部事件投影，不映射任何HTTP入口。 */
@@ -90,12 +96,12 @@ public class NotificationService {
     }
     @Transactional(propagation=Propagation.MANDATORY)
     public void reaction(String targetType,long target,long actor,String kind,boolean active){
-        String key=kind+":"+target+":"+actor;
-        if(!active){var receivers=mapper.receivers(key);mapper.deactivate(key);receivers.forEach(this::pushUnread);return;}
-        Long recipient=null;
-        if(targetType.equals("post")){var post=mapper.post(target);if(post!=null&&post.available())recipient=post.authorId();}
-        else if(targetType.equals("comment")){var comment=mapper.comment(target);if(comment!=null&&comment.available())recipient=comment.authorId();}
-        if(recipient!=null&&recipient!=actor)insert(recipient,key,"reaction",kind,actor,null,null,targetType,target,"互动提醒","");
+        Long recipient=null;long postId=target;
+        if(targetType.equals("post")){var post=mapper.post(target);if(post!=null&&(!active||post.available()))recipient=post.authorId();}
+        else if(targetType.equals("comment")){var comment=mapper.comment(target);if(comment!=null){postId=comment.postId();if(!active||comment.available())recipient=comment.authorId();}}
+        List<Long> recipients=recipient!=null&&recipient!=actor?List.of(recipient):List.of();
+        if(recipients.isEmpty()&&active)return;
+        route(journal.record(kind,targetType,target,postId,actor,recipients,!active));
     }
     @Transactional(propagation=Propagation.MANDATORY)
     public void comment(long commentId){
@@ -103,8 +109,20 @@ public class NotificationService {
         var post=mapper.post(comment.postId());Set<Long> recipients=new LinkedHashSet<>();recipients.add(post.authorId());
         if(comment.replyToId()!=null){var reply=mapper.comment(comment.replyToId());if(reply!=null)recipients.add(reply.authorId());}
         recipients.remove(comment.authorId());
-        for(long receiver:recipients)insert(receiver,"comment:"+commentId,"comment",comment.replyToId()==null?"comment":"reply",
-                comment.authorId(),null,null,"comment",commentId,"评论与回复","");
+        if(!recipients.isEmpty())route(journal.record(comment.replyToId()==null?"comment":"reply","comment",commentId,
+                comment.postId(),comment.authorId(),new ArrayList<>(recipients),false));
+    }
+    private void route(InteractionEvent intent){
+        if(delivery.isEnabled())journal.append(intent);
+        else {applyInteraction(intent);journal.applied(intent);}
+    }
+    /** Applies captured intent, never re-derives recipients from a possibly changed relation. Caller owns the transaction and user/stream locks. */
+    @Transactional(propagation=Propagation.MANDATORY)
+    public void applyInteraction(InteractionEvent intent){
+        if(intent.cancelled()){var receivers=mapper.receivers(intent.naturalKey());mapper.deactivate(intent.naturalKey());receivers.forEach(this::pushUnread);return;}
+        boolean comment=intent.kind().equals("comment")||intent.kind().equals("reply");
+        for(long receiver:intent.recipients())insert(receiver,intent.naturalKey(),comment?"comment":"reaction",intent.kind(),
+                intent.actorId(),null,null,intent.targetType(),intent.targetId(),comment?"评论与回复":"互动提醒","");
     }
     @Transactional(propagation=Propagation.MANDATORY)
     public void moderation(long recipientId,String eventKey,String title,String summary,String targetType,Long targetId){

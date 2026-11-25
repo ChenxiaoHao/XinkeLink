@@ -69,10 +69,14 @@ function Stop-StartedMySql($Process) {
 }
 
 function Start-IsolatedMySql($State) {
+  # Preserve the established Canal ROW/FULL stream on every recovery, using the original data/binlog directories.
+  $binlogDirectory = Join-Path $mysqlDirectory 'binlog'
+  New-Item -ItemType Directory -Force -Path $binlogDirectory | Out-Null
   # 当前 8.4.13 --verbose --help 明确支持 --no-monitor，避免 Windows 监控进程派生实际服务进程。
   $launcher = Start-Process -FilePath $mysqlServer -WindowStyle Hidden -PassThru -ArgumentList @(
     '--no-defaults', '--no-monitor', "--basedir=`"$MySqlHome`"", "--datadir=`"$dataDirectory`"", '--bind-address=127.0.0.1', "--port=$port", '--mysqlx=0',
-    '--skip-log-bin', '--general-log=OFF', '--slow-query-log=OFF', "--pid-file=`"$(Join-Path $mysqlDirectory 'mysql.pid')`"", "--log-error=`"$(Join-Path $mysqlDirectory 'mysql.err')`""
+    "--log-bin=`"$(Join-Path $binlogDirectory 'xinkelink-bin')`"", '--server-id=16111601', '--binlog-format=ROW', '--binlog-row-image=FULL', '--sync-binlog=1', '--binlog-expire-logs-seconds=2592000',
+    '--general-log=OFF', '--slow-query-log=OFF', "--pid-file=`"$(Join-Path $mysqlDirectory 'mysql.pid')`"", "--log-error=`"$(Join-Path $mysqlDirectory 'mysql.err')`""
   ) -RedirectStandardOutput (Join-Path $mysqlDirectory 'server.stdout.log') -RedirectStandardError (Join-Path $mysqlDirectory 'server.stderr.log')
   $launcherStartedAt = $launcher.StartTime.ToUniversalTime()
   $confirmedChildren = @{}
@@ -227,13 +231,24 @@ if ($GrantRuntimePermissions) {
   $tableOutput = Invoke-PrivateMySql "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '$database' AND TABLE_TYPE = 'BASE TABLE' AND LEFT(TABLE_NAME, 3) = 'xl_' ORDER BY TABLE_NAME;" $clientFile
   $tables = @($tableOutput -split '\r?\n' | Where-Object { $_ })
   $history = Invoke-PrivateMySql "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '$database' AND TABLE_NAME = 'flyway_schema_history' AND TABLE_TYPE = 'BASE TABLE';" $clientFile
-  if ($tables.Count -ne 27 -or 'xl_feedback' -notin $tables -or 'xl_audit_log' -notin $tables -or 'xl_beta_stage' -notin $tables -or 'xl_beta_code' -notin $tables -or @($tables | Where-Object { $_ -notmatch '^xl_[a-z0-9_]+$' }).Count -gt 0 -or $history -ne '1') {
-    throw '必须先迁移出完整的 27 张 xl_ 业务表及 Flyway 历史表，再授运行账号写权限。'
+  $expectedTables = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'database-table-contract.json') -Raw | ConvertFrom-Json)
+  if ($tables.Count -ne $expectedTables.Count -or @(Compare-Object $expectedTables $tables).Count -gt 0 -or @($tables | Where-Object { $_ -notmatch '^xl_[a-z0-9_]+$' }).Count -gt 0 -or $history -ne '1') {
+    throw '必须先迁移出数据库契约清单中的全部业务表及 Flyway 历史表，再授运行账号写权限。'
   }
-  # 先清除该专用账号既有权限，再逐表授权，绝不授库级写权限。
-  $grants = @("REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'xinkelink_runtime'@'127.0.0.1';", "GRANT SELECT ON $database.* TO 'xinkelink_runtime'@'127.0.0.1';")
+  # Additive grants only: never revoke this account's existing isolated test/CDC environment permissions.
+  $grants = @("GRANT SELECT ON $database.* TO 'xinkelink_runtime'@'127.0.0.1';")
   foreach ($table in $tables) {
-    $permissions = if ($table -eq 'xl_audit_log') { 'INSERT' } elseif ($table -eq 'xl_feedback') { 'INSERT, UPDATE (id)' } else { 'INSERT, UPDATE, DELETE' }
+    $permissions = if ($table -eq 'xl_audit_log') { 'INSERT' }
+      elseif ($table -eq 'xl_feedback') { 'INSERT, UPDATE (id)' }
+      elseif ($table -in @('xl_view_event', 'xl_view_visitor_day')) { 'INSERT' }
+      elseif ($table -in @('xl_view_receipt', 'xl_view_daily', 'xl_view_projection', 'xl_view_failure')) { 'INSERT, UPDATE' }
+      elseif ($table -in @('xl_lucky_entry', 'xl_lucky_result', 'xl_lucky_operation')) { 'INSERT' }
+      elseif ($table -in @('xl_lucky_bag', 'xl_lucky_display', 'xl_lucky_claim')) { 'INSERT, UPDATE' }
+      elseif ($table -in @('xl_ai_knowledge_version', 'xl_ai_knowledge_chunk', 'xl_ai_usage')) { 'INSERT' }
+      elseif ($table -in @('xl_ai_knowledge', 'xl_ai_knowledge_index', 'xl_ai_session')) { 'INSERT, UPDATE' }
+      elseif ($table -eq 'xl_ai_runtime') { 'UPDATE' }
+      elseif ($table -eq 'xl_ai_reindexed_vector') { 'INSERT, UPDATE' }
+      else { 'INSERT, UPDATE, DELETE' }
     $grants += "GRANT $permissions ON $database.$table TO 'xinkelink_runtime'@'127.0.0.1';"
   }
   Invoke-PrivateMySql ($grants -join "`n") $clientFile | Out-Null

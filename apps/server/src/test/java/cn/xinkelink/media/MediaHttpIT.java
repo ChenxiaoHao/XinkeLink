@@ -50,10 +50,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(MediaHttpIT.Adapters.class)
 @Transactional
 class MediaHttpIT {
-    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
-    cn.xinkelink.beta.BetaService platformPhase;
-    // Business regressions run in the public phase; beta access has its own integration suite.
-    @org.junit.jupiter.api.BeforeEach void publicPlatformFixture(){org.mockito.Mockito.doReturn(false).when(platformPhase).isBeta();}
 
     private static final Path DIRECTORY = temporaryDirectory();
     @Autowired MockMvc mvc;

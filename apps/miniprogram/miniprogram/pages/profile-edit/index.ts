@@ -1,12 +1,13 @@
+import { getViewerRole } from '../../features/profile/viewer'
 import { registerPage } from '../../backend/pages'
-import { defaultProfile, readLocalSession, readProfile, requireLocalSession, saveProfile, setLocalSession } from '../../features/profile/repository'
+import { defaultProfile, readProfile, requireLocalSession, saveProfile, setLocalSession } from '../../features/profile/repository'
 import { persistProfileAvatar, releaseProfileAvatar } from '../../features/profile/avatar'
 const FIELDS = ['nickname', 'bio', 'major', 'className', 'studentId', 'year'] as const
 registerPage(wx, Page, 'profile-edit')({
   data: { form: defaultProfile(), loadFailed: false, saving: false, choosing: false },
   onLoad() {
     // 访客不能编辑资料：弹一键登录，登录成功后原地加载表单继续。
-    if (readLocalSession(wx)) { this.reload(); return }
+    if (getViewerRole(wx) !== 'guest') { this.reload(); return }
     wx.showModal({ title: '当前为访客浏览', content: '登录后才能编辑个人资料，是否现在登录？', confirmText: '一键登录', success: result => {
       if (!result.confirm) { wx.navigateBack({ delta: 1, fail() { wx.switchTab({ url: '/pages/forum/index' }) } }); return }
       try { setLocalSession(wx, true); this.reload() } catch { wx.showToast({ title: '登录未完成，请重试', icon: 'none' }) }

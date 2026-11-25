@@ -31,10 +31,6 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 @ActiveProfiles({"db","auth"})
 class MessagingConcurrencyIT {
-    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
-    cn.xinkelink.beta.BetaService platformPhase;
-    // Business regressions run in the public phase; beta access has its own integration suite.
-    @org.junit.jupiter.api.BeforeEach void publicPlatformFixture(){org.mockito.Mockito.doReturn(false).when(platformPhase).isBeta();}
 
     @Autowired MessagingService messaging;
     @MockitoSpyBean MessagingStore store;

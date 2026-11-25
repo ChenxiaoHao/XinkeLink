@@ -1,0 +1,2 @@
+ALTER TABLE xl_ai_knowledge ADD COLUMN valid_from VARCHAR(10) NOT NULL DEFAULT '', ADD COLUMN valid_until VARCHAR(10) NOT NULL DEFAULT '';
+ALTER TABLE xl_ai_knowledge_version ADD COLUMN valid_from VARCHAR(10) NOT NULL DEFAULT '', ADD COLUMN valid_until VARCHAR(10) NOT NULL DEFAULT '';

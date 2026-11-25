@@ -4,7 +4,7 @@ import { useAdminAuthStore } from './admin-auth'
 import { maskAuditActor, sanitizeAuditText, sanitizeChangedFields } from '../../src/utils/admin-audit'
 
 export type AuditOutcome = 'success' | 'business_rejected' | 'execution_error'
-export type AuditModule = 'posts' | 'comments' | 'reports' | 'users' | 'announcements' | 'notifications' | 'settings'
+export type AuditModule = 'posts' | 'comments' | 'reports' | 'users' | 'announcements' | 'notifications' | 'settings' | 'lucky_bags' | 'ai_knowledge'
 
 export interface AuditEventInput {
   module: AuditModule

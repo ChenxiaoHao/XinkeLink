@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict');
-function runtime(){const saved=new Map();return{saved,getStorageSync:k=>saved.get(k),setStorageSync:(k,v)=>saved.set(k,v)}}
+function runtime(){const saved=new Map([['xinkelink.session.v1',true]]);return{saved,getStorageSync:k=>saved.get(k),setStorageSync:(k,v)=>saved.set(k,v)}}
 test('profile lists and collections use existing IDs, own anonymous posts stay out of public profiles',()=>{
  const s=runtime(),f=require('../.test-dist/features/forum/repository.js'),c=require('../.test-dist/features/profile/content.js');
  const p=f.publishForumPost(s,{content:'匿名记录',images:[],category:'campus',anonymous:true},[]);

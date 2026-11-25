@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict');const {loadPage}=require('./page-harness.cjs');const {loadComponent}=require('./native-harness.cjs');
-function runtime(){const saved=new Map(),calls={modals:[],toasts:[],routes:[]};const wx={getStorageSync:k=>saved.get(k),setStorageSync:(k,v)=>saved.set(k,v),showModal:o=>calls.modals.push(o),showToast:o=>calls.toasts.push(o.title),navigateTo:o=>calls.routes.push(o.url)};return{saved,calls,wx};}
+function runtime(){const saved=new Map([['xinkelink.session.v1',true]]),calls={modals:[],toasts:[],routes:[]};const wx={getStorageSync:k=>saved.get(k),setStorageSync:(k,v)=>saved.set(k,v),showModal:o=>calls.modals.push(o),showToast:o=>calls.toasts.push(o.title),navigateTo:o=>calls.routes.push(o.url)};return{saved,calls,wx};}
 test('visitor actions do not mutate forum state and point to local login',()=>{
  const r=runtime();r.saved.set('xinkelink.session.v1',false);const f=loadPage('pages/forum/index.js',r);f.onLoad({});f.onLikePost({detail:{id:'post-001'}});
  assert.equal(r.saved.size,1);assert.ok(r.calls.modals.length>=1);assert.equal(r.calls.routes.length,0);

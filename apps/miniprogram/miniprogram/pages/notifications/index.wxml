@@ -2,7 +2,7 @@
 <view class="notification-header">
   <page-header title="通知" />
   <view class="notification-tabs">
-    <button class="notification-tab {{noticeFilter === 'all' ? 'notification-tab--active' : ''}}" data-filter="all" bindtap="onFilterTap"><view><image wx:if="{{noticeFilter === 'all'}}" class="notification-tab-icon" src="/assets/icons/x-bell-ink.png" /><text>全部</text><view class="notification-tab-underline"></view></view></button>
+    <button class="notification-tab {{noticeFilter === 'all' ? 'notification-tab--active' : ''}}" data-filter="all" bindtap="onFilterTap"><view><text>全部</text><view class="notification-tab-underline"></view></view></button>
     <button class="notification-tab {{noticeFilter === 'unread' ? 'notification-tab--active' : ''}}" data-filter="unread" bindtap="onFilterTap"><view><text>未读</text><view class="notification-tab-underline"></view></view></button>
   </view>
 </view>

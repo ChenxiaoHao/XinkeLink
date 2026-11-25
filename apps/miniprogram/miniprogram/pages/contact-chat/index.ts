@@ -1,7 +1,8 @@
+import { getViewerRole } from '../../features/profile/viewer'
 import { registerPage } from '../../backend/pages'
 import { ContactMessage } from '../../features/contact/storage'
 import { openConversation, Peer, readConversation, resolvePeer, sendText } from '../../features/contact/repository'
-import { localIdentity, readLocalSession, requireLocalSession } from '../../features/profile/repository'
+import { localIdentity, requireLocalSession } from '../../features/profile/repository'
 import { readPeerChatSettings } from '../../features/contact/settings'
 
 interface ChatMessage extends ContactMessage { showTime: boolean; timeText: string }
@@ -22,6 +23,9 @@ registerPage(wx, Page, 'contact-chat')({
     selfNickname: '',
     input: '',
     failedText: '',
+    sendAcknowledged: false,
+    lastSelfMessageId: '',
+    ownBlocked: false,
     scrollTo: '',
     headerHeight: 88,
     keyboardHeight: 0,
@@ -44,9 +48,8 @@ registerPage(wx, Page, 'contact-chat')({
   refreshConversation(markRead = true) {
     try {
       // 访客拦截：不读历史、不写已读标记（读失败也按访客处理）；一键登录只提示一次，确认后重新进入生效。
-      let loggedIn = false
-      try { loggedIn = readLocalSession(wx) } catch { loggedIn = false }
-      if (!loggedIn) { if (!this._guestPrompted) { this._guestPrompted = true; requireLocalSession(wx) } return }
+      const loggedIn = getViewerRole(wx) !== 'guest'
+      if (!loggedIn) { this.setData({ peer: null, messages: [], selfAvatar: '', selfNickname: '', input: '', failedText: '', lastSelfMessageId: '', ownBlocked: false, blockedReason: '', canSend: false }); if (!this._guestPrompted) { this._guestPrompted = true; requireLocalSession(wx) } return }
       if (!this._peerId || !resolvePeer(wx,this._peerId)) { this.setData({missing:true,loadFailed:false,canSend:false});return }
       let conversation = readConversation(wx, this._peerId)
       let readStateFailed = this.data.readStateFailed
@@ -58,16 +61,18 @@ registerPage(wx, Page, 'contact-chat')({
         } catch { readStateFailed = true }
       }
       const messages = messageViews(conversation.messages)
+      const ownBlocked = readPeerChatSettings(wx, this._peerId).blocked === true
       this.setData({ peer: conversation.peer, messages,
+        lastSelfMessageId: messages.filter(message => message.fromSelf).slice(-1)[0]?.id || '', ownBlocked,
         selfAvatar: localIdentity(wx).avatar, selfNickname: localIdentity(wx).nickname, scrollTo: this.targetScrollId(messages),
-        missing: false, loadFailed: false, readStateFailed, canSend: !readPeerChatSettings(wx,this._peerId).blocked, blockedReason: readPeerChatSettings(wx,this._peerId).blocked ? '你已屏蔽这位同学' : '' })
+        missing: false, loadFailed: false, readStateFailed, canSend: !ownBlocked, blockedReason: ownBlocked ? '你已屏蔽这位同学，解除后才能发送消息' : '' })
     } catch { this.setData({ loadFailed: true, missing: false, canSend: false }) }
   },
   onHeaderLayout(event:WechatMiniprogram.CustomEvent<{height:number;rightSpace?:number}>) {this.setData({headerHeight:event.detail.height,headerRightSpace:event.detail.rightSpace||104})},
   onKeyboardHeightChange(event:WechatMiniprogram.CustomEvent<{height:number}>) {this.setData({keyboardHeight:Math.max(0,event.detail.height||0)})},
   onMessageInput(event:WechatMiniprogram.CustomEvent<{value:string}>) {this.setData({input:event.detail.value,failedText:''})},
-  onSendTap() {const text=this.data.input.trim();if(!text||this.data.loadFailed||!this._peerId||this.data.sending||!requireLocalSession(wx))return;if(readPeerChatSettings(wx,this._peerId).blocked){this.setData({canSend:false,blockedReason:'你已屏蔽这位同学'});wx.showToast({title:'你已屏蔽这位同学',icon:'none'});return}this.setData({sending:true});try{sendText(wx,this._peerId,text);this.setData({input:'',failedText:''});this.refreshConversation(false)}catch{this.setData({failedText:this.data.input});wx.showToast({title:'发送失败，请重试',icon:'none'})}finally{this.setData({sending:false})}},
-  onRetrySendTap(){this.onSendTap()},onRetryTap(){this.refreshConversation()},onScrollToUpper(){},
+  onSendTap() {const text=this.data.input.trim();if(!text||this.data.loadFailed||!this._peerId||this.data.sending||!requireLocalSession(wx))return;if(readPeerChatSettings(wx,this._peerId).blocked){this.setData({canSend:false,ownBlocked:true,blockedReason:'你已屏蔽这位同学，解除后才能发送消息'});wx.showToast({title:'你已屏蔽这位同学',icon:'none'});return}this.setData({sending:true});try{sendText(wx,this._peerId,text);this.setData({input:'',failedText:''});this.refreshConversation(false)}catch{this.setData({failedText:this.data.input});wx.showToast({title:'发送失败，请重试',icon:'none'})}finally{this.setData({sending:false})}},
+  onRetrySendTap(){if(this.data.sending||!this.data.failedText)return;this.setData({input:this.data.failedText});this.onSendTap()},onRetryTap(){this.refreshConversation()},onScrollToUpper(){},
   // wxml 三处头像都绑了 binderror，但演示模式侧一直缺这个 handler，破图时没有兜底。
   onChatAvatarError(event:WechatMiniprogram.TouchEvent){
    const fallback='/assets/icons/user-round-muted.png',owner=event.currentTarget.dataset.owner

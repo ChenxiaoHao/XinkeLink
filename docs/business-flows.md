@@ -1,3 +1,61 @@
+# 2026-11-22 内测与福袋下线
+
+访客启动直接进入论坛。发帖、评论、私信和私有资源仍按原权限校验。两端已移除内测和福袋入口及互动流程，旧中奖通知自 V19 起从收件箱和未读计数移除，历史活动和领奖记录仍可核对。
+
+# 2026-11-17 免费定时福袋规则（历史）
+
+原发帖圆钮上方入口→共享卡片→既有登录授权→服务端确认参与→固定时间随机抽1人→中奖通知回到对应活动→本人查看私密编码/管理员微信→后台POST核验→开始发放→原发放管理员线下转10元后确认。取消授权不参与；结果未知后重试同一事实。参与资格以活动锁后数据库时间严格早于截止且最终提交为准，任务延迟不延长截止。
+
+活动draft→published→drawn，未截止前可填写原因取消；发布后冻结，0人也正常结束。展示指针独立，切新一期或结束展示不删除旧中奖记录、不使编码失效。开奖结果、领奖与可靠通知意图同事务；独立事务补投站内通知，失败不重抽，MQ关闭也可HTTP补取。领奖pending→issuing→paid，查询不核销，中断不回退，paid仅为管理员人工确认，不代表程序转账。
+
+fixture有DEMO标记、可控时钟与两期历史，live失败不回退演示。私密状态关闭/换号即清理，迟到响应不能回填；客户端倒计时不决定资格或结果。身份仍只用getViewerRole，写入仍经原真实会话校验。V14/41表、开发库无真实奖品。活动报名、抢人数、秒杀、Lua/Redis Stream报名方案撤下，无支付/钱包/订单。详见[福袋交接与验收](backend/20-lucky-bag-acceptance.md)，下方历史原文保留。
+
+
+# 2026-11-17 公开详情浏览与真实近7日热榜（当前规则）
+
+公开详情首次成功展示且页面在前台时生成一次eventId；同页刷新/onShow/评论/图片续期不重计，新页面访问可新事件。GET详情和列表预加载不采集。live后台再次验证公开可见性、已有用户会话或服务端签名匿名统计凭证，在MySQL可靠接收事务提交后202；Kafka或聚合失败不使详情页面不可用。最多20条、10分钟的客户端内存队列保留同ID重试；退出、换号、模式变化丢弃旧未确认事件，迟到详情/榜单响应比较身份、模式及请求代次。
+
+PV按业务eventId唯一；UV是验证用户标识或签名访客凭证派生的统计键，绝不以IP/任意客户端userId计独立访客。匿名统计凭证不能登录，身份判定仍只用getViewerRole。清理标识、跨设备、登录转换可能重复计人，UV不等于真实自然人数。
+
+事件日期为服务端首次可靠接收时间的北京时间日期，重试和消费恢复不改归属。榜单窗口是北京时间今天及前6自然日，跨日精确DISTINCT UV、UV降序/数值postId升序，PV仅展示；旧帖也可上榜。消费者事务原子提交去重/PV/访客集合，再提交相应Kafka offset；失败持久阻塞不越过。Redis保存绝对排名，默认5秒重建并按日期退窗，丢失后自动重建，无需改offset。
+
+搜索live使用/posts/view-ranking真实Top5，遍历全排名后复用既有帖子匿名/图片/可见投影继续补齐；隐藏/删除/审核非normal立即过滤，恢复后可立即出现。失败显示重试，空榜不回退点赞排名或演示数据。fixture继续同WXML，使用postId确定的演示浏览事件和同一窗口/去重/同分规则，不连接Kafka、不写live；原布局、搜索分页/历史/深链/返回行为保留。
+
+当前18081已用验收JAR，开发库V13/35表，采集/发布/消费/投影及旧MQ/CDC全部关闭；真实统计仅隔离环境开启。细节、完整测试、真实故障和退化数据、运行hash与[学习排错指南](./project-handover.md#浏览统计学习与排错)见交接顶部。下方旧通知/缓存/走查原文保留。
+
+# 2026-11-16 互动通知MQ路径补记
+
+既有帖子点赞、收藏、评论点赞、根评论和回复统一受通知MQ开关控制；未新增收藏产品功能。默认关闭时新互动仍在业务事务内同步生成通知；开启后HTTP成功保证业务与Outbox同事务提交，通知允许最终可见，由消费者原子提交通知及Inbox。自赞排除、自然去重、取消永久失活、回复收件人去重、匿名/隐藏删除安全投影、偏好仅影响角标、标读与游标隔离保留。公告、系统任务、治理通知及私信保持原路径。
+
+关闭新MQ生成不删除旧积压，可单独保留发布器/消费者清理；同步路径也维护取消栅栏，迟到创建不会恢复通知。WebSocket仍仅覆盖消费实例的本机会话，跨实例靠同库HTTP补取。当前18081运行本轮JAR但四个MQ/CDC相关开关关闭；隔离库实际MQ、双JVM和故障验收及性能退化见[当前交接](./project-handover.md)顶部。下方历史走查原文保留。
+
+# 2026-11-14 帖子公共计数缓存规则
+
+列表/详情/搜索等仍先通过原有可见性及权限查询。仅likeCount/commentCount走Redis旁路缓存，当前用户liked/favorited/isMine、图片授权地址、作者及游标实时生成。一次MGET，miss批量查库，无逐帖计数SQL。写事务内绕过缓存；帖子点赞、评论/回复增删、后台状态/删除和举报隐藏成功提交后删除所属帖子计数，回滚不删除。隐藏根评论时回复也不计入公共数，口径沿用原SQL。
+
+默认20秒＋0—10秒抖动，开关关闭回源MySQL；Redis业务缓存故障可回源，DB异常继续报错，认证限流仍fail-closed。并发旧值回填或删除失败可能短暂陈旧，由TTL兜底，不宣称强一致。fixture行为和live HTTP契约不变。真实环境、迁移、测试和性能证据见[最新交接记录](./project-handover.md)开头。
+
+后续主线更新为：Redis → Caffeine → Canal → RocketMQ → Kafka → 故障演练/性能/上线 → Python＋LangGraph＋ChromaDB AI；旧Spring AI计划已作废。
+
+---
+
+# 2026-11-14 修复后的业务规则
+
+本节为当前规则；下方带旧行号的逐流程审查保留作历史根因记录，其中缺陷状态以[BUGS.md](../BUGS.md)本轮B01—B11表为准。
+
+- 启动：`app.json`首屏为forum。服务端迁移到V11后使用现有open开放阶段，正常浏览不要求内测码。beta页及历史管理能力保留，未绕过普通认证/封禁/限流；旧数据库必须实际执行新增迁移。
+- 身份：页面与组件展示/路由以getViewerRole为准；空本地会话、损坏或读取失败按guest。写操作继续现有requireLocalSession/requireSession，不混用fixture登录与live微信授权。fixture登录和退出触发首页reLaunch；live登录原地继续、退出reLaunch；身份广播沿用。
+- 私人读取：chat-settings/profile/my-posts/my-collections深链、reload及退出后刷新都先判身份；私人数据和管理按钮对guest隔离。公开主页只展示公开资料及非匿名帖子。确认弹窗、异步响应均复验发起身份，迟到响应不恢复退出前数据。
+- 搜索历史与草稿：退出只隔离、不删除；fixture属于设备单一演示身份，live按会话用户ID存独立key，无归属旧key仅fixture兼容。新建草稿用原key，编辑草稿增加`:edit:{encodedPostId}`，live再追加用户分区。读取guest为空；保存/删除guest不落盘。编辑器退出刷新清空，重新进入可恢复该身份保存草稿。
+- 分类：首页八标签中recommended/latest只排序。六个当前发布分类为lost-found/secondhand/campus/complain/help/buddy；历史study兼容编辑。HTTP/数据库用lost_found，其余名称相同；后台支持全部七类。二手闲置无价格/商品字段、订单和支付。
+- 发布编辑：编辑不改变匿名身份；成功仅清理该操作的草稿，失败/取消不清其它草稿。fixture/live采用同一草稿工具。
+- 举报/反馈/通知偏好必须登录；取消/失败不能保存或伪装成功。收件箱等待授权完成后才刷新，异常保持访客。转发所有入口明确未开放，真实转发是待办。
+- 搜索互动：目标必须来自当前有效结果，换词立即失效旧结果；异步返回比较查询代次与身份，失败保留状态并提示重试，分页和滚动列表保留。
+
+自动验证及环境限制见[project-handover.md](./project-handover.md)本轮接手记录。小程序Node测试含fixture与live HTTP边界桩；它们不等同真实Java/MySQL/Redis/微信联调。
+
+---
+
 # 信科 Link · 业务流程逐条走查（交接用）
 
 > 生成时间：2026-11-14。范围：`apps/miniprogram/miniprogram/` 的 **17 条业务主流程**（另有 4 条辅助流程附在 §3.18–3.21）。
@@ -397,15 +455,15 @@
 | 13 | 访客可见发帖草稿与草稿页（`pages/drafts` 已注册但无入口，仅深链可达） | `pages/forum-publish/index.ts:31-36`；`pages/drafts/index.ts:3` |
 | 14 | 编辑帖子成功后不清理草稿 | `backend/pages.ts:257` |
 | 15 | 评论删除未做 URL 编码 | `backend/pages.ts:231`（同文件 `:218` 等处都做了） |
-| 16 | `pages/login/` 是已注销的孤儿代码，`definitions.login` 仍在 | `pages/login/index.ts:3`；`backend/pages.ts:376-380` |
-| 17 | `xinkelink.search.entry` 只写不读（死 key） | `pages/forum/index.ts:94` |
+| 16 | 已移除注销的独立登录页及其处理逻辑 | 当前登录入口使用页内登录组件 |
+| 17 | 已移除只写不读的 `xinkelink.search.entry` | 首页搜索直接切换至搜索页 |
 | 18 | `onScrollToUpper(){}` 空实现（演示模式无历史分页） | `pages/contact-chat/index.ts:70`；`BUGS.md` 第 5 条 |
 | 19 | `onLoadMoreTap(){}` 空实现（演示模式 `postHasMore` 恒 false，按钮不可渲染） | `pages/search/index.ts:35`；`BUGS.md` 第 6 条 |
 | 20 | 真机每页 onShow 都发一次 `/beta/access` | `backend/pages.ts:534,536`；`backend/beta.ts:37` |
 | 21 | 访客点转发会先弹登录再看「即将上线」 | `backend/pages.ts:32` |
 | 22 | profile 菜单 handler 名 `onSettingsTap` 实际跳反馈页（真机侧叫 `onFeedbackTap`） | `pages/profile/index.ts:60,67` vs `backend/pages.ts:328` |
 | 23 | 演示模式改通知偏好不判登录（真机有 `requireSession`） | `components/app-shell/index.ts:66` vs `:71` |
-| 24 | `__shot.cjs:18` 引用了已下线的 `/pages/settings/index` | `apps/miniprogram/__shot.cjs:18` |
+| 24 | 已移除引用下线页面的临时截图脚本 | `/pages/settings/index` 已下线 |
 
 ---
 

@@ -1,5 +1,5 @@
 export type ModerationStatus = 'visible' | 'hidden'
-export type PostCategory = '校园生活' | '失物招领' | '学习交流' | '校园互助'
+export type PostCategory = '校园生活' | '失物招领' | '学习交流' | '校园互助' | '二手闲置' | '吐槽' | '找搭子'
 export type PostPeriod = 'all' | '7d' | '30d'
 export type CommentLevel = 'all' | 'root' | 'reply'
 export type ModeratedBusiness = 'all' | 'forum'

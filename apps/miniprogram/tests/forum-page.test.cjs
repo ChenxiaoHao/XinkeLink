@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { loadPage } = require('./page-harness.cjs');
 
 function forum(overrides = {}) {
-  const saved = new Map();
+  const saved = new Map([['xinkelink.session.v1', true]]);
   const calls = { stopped: 0, messages: [], routes: [] };
   const wx = {
     getStorageSync: key => saved.get(key),
@@ -36,7 +36,7 @@ test('pull-down refresh resets the page and preserves a local like', () => {
   assert.equal(page.data.posts.length, 2);
   assert.equal(page.data.posts[0].likeCount, 29);
   assert.equal(calls.stopped, 1);
-  assert.equal(saved.size, 1);
+  assert.equal(saved.size, 2);
 });
 
 test('a failed local save leaves the previous interaction visible', () => {

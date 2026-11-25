@@ -1,61 +1,147 @@
-.edit-page { padding: 24rpx 30rpx calc(52rpx + env(safe-area-inset-bottom)); }
-.edit-page .edit-avatar-button { display: flex; flex-direction: column; align-items: center; box-sizing: border-box; width: 100%; min-width: 0; padding: 8rpx 0 38rpx; margin: 0; background: transparent; color: var(--xlk-color-muted); font-size: 24rpx; font-weight: 400; line-height: 1.6; }
-.edit-avatar-wrap { position: relative; margin: 0 0 18rpx; }
-.edit-avatar { display: block; width: 158rpx; height: 158rpx; border-radius: 50%; border: 7rpx solid #FFF; box-shadow: var(--xlk-shadow-card); }
-.edit-camera { position: absolute; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; width: 51rpx; height: 51rpx; border: 4rpx solid #FFF; background: var(--xlk-color-primary-soft); border-radius: 50%; box-shadow: var(--xlk-shadow-card); }
-.edit-camera image { width: 28rpx; height: 28rpx; }
-.edit-card { padding: 4rpx 26rpx; border-radius: 26rpx; background: #FFF; box-shadow: var(--xlk-shadow-card); }
-.edit-field { display: flex; align-items: center; gap: 20rpx; min-height: 100rpx; border-bottom: 1rpx solid var(--xlk-color-border); }
-.edit-field label, .edit-bio label { font-size: 26rpx; color: var(--xlk-color-text); }
-.edit-field label { flex-shrink: 0; width: 120rpx; }
-.edit-field input { flex: 1; min-width: 0; width: 0; height: 80rpx; text-align: right; font-size: 25rpx; color: var(--xlk-color-primary-strong); }
-.edit-field input[disabled] { color: var(--xlk-color-muted); }
-.edit-bio { padding: 24rpx 0; border-bottom: 1rpx solid var(--xlk-color-border); }
+page {
+  background: #ffffff;
+  color: #0f1419;
+  --profile-auth-primary: #0f1419;
+}
+.edit-page { padding: 0 0 calc(32px + env(safe-area-inset-bottom)); background: #fff; }
+.edit-page .edit-avatar-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 20px 16px;
+  margin: 0;
+  background: #fff;
+  border-bottom: 1px solid #eff3f4;
+  color: #536471;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+.edit-avatar-wrap { position: relative; margin: 0 0 10px; }
+.edit-avatar {
+  display: block;
+  box-sizing: border-box;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(15, 20, 25, 0.08);
+  background: #eff3f4;
+}
+.edit-camera {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #fff;
+  background: #0f1419;
+  border-radius: 50%;
+}
+.edit-camera image { width: 14px; height: 14px; filter: brightness(0) invert(1); }
+
+.edit-card { padding: 0 16px; background: #fff; }
+.edit-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  border-bottom: 1px solid #eff3f4;
+}
+.edit-field label, .edit-bio label { font-size: 15px; color: #536471; }
+.edit-field label { flex-shrink: 0; width: 76px; }
+.edit-field input {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+  height: 44px;
+  text-align: right;
+  font-size: 15px;
+  color: #0f1419;
+}
+.edit-field input[disabled] { color: #536471; }
+.edit-bio { padding: 14px 0; border-bottom: 1px solid #eff3f4; }
 .edit-bio > view { display: flex; align-items: center; justify-content: space-between; }
-.edit-bio > view > text { font-size: 24rpx; color: var(--xlk-color-muted); }
-.edit-bio textarea { display: block; box-sizing: border-box; width: 100%; min-height: 128rpx; padding-top: 16rpx; font-size: 25rpx; line-height: 1.8; color: var(--xlk-color-primary-strong); }
+.edit-bio > view > text { font-size: 12px; color: #536471; font-variant-numeric: tabular-nums; }
+.edit-bio textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 64px;
+  padding-top: 8px;
+  font-size: 15px;
+  line-height: 22px;
+  color: #0f1419;
+}
 .edit-year { border-bottom: 0; }
-.edit-disclosure { display: block; padding: 0 0 18rpx; font-size: 24rpx; color: var(--xlk-color-muted); line-height: 1.6; }
-.edit-note { display: flex; gap: 12rpx; align-items: flex-start; margin: 28rpx 0 36rpx; padding: 20rpx; border-radius: 18rpx; background: #EAF0F8; font-size: 24rpx; color: var(--xlk-color-primary-strong); line-height: 1.7; }
-.edit-note image { flex-shrink: 0; width: 27rpx; height: 27rpx; margin-top: 4rpx; }
-.edit-page .edit-save { display: block; box-sizing: border-box; width: 100%; min-width: 0; padding: 19rpx; margin: 0; background: var(--xlk-color-primary-strong); color: #FFF; border-radius: 50rpx; font-size: 28rpx; font-weight: 600; line-height: 1.6; box-shadow: var(--xlk-shadow-button); }
-.edit-page .edit-save[disabled] { opacity: .6; background: var(--xlk-color-primary); color: #FFF; }
-.edit-local-note { display: block; padding: 20rpx 18rpx 0; color: var(--xlk-color-muted); font-size: 24rpx; text-align: center; line-height: 1.8; }
-.edit-error { display: flex; flex-direction: column; align-items: center; gap: 18rpx; padding: 50rpx 20rpx; border-radius: 24rpx; background: #FFF; color: var(--xlk-color-muted); text-align: center; font-size: 24rpx; }
-.edit-error image { width: 68rpx; height: 68rpx; margin: 20rpx; }
-.edit-page .edit-error button { box-sizing: border-box; width: auto; min-width: 0; max-width: 100%; margin: 0; background: var(--xlk-color-primary-soft); color: var(--xlk-color-primary-strong); border-radius: 40rpx; padding: 10rpx 34rpx; font-size: 24rpx; font-weight: 400; line-height: 1.6; }
-.edit-card { box-shadow: none; }
-.edit-disclosure, .edit-note { color: #667085; }
-
-@import "../../styles/page-polish.wxss";
-
-/* 已确认的二级页面主题，仅作用于当前页面。 */
-page { background: #FFFFFF; color: #0F1419; --xlk-color-primary: #222223; --xlk-color-primary-strong: #222223; --xlk-color-primary-soft: #F0F0F3; --xlk-color-background: #FFFFFF; --xlk-color-text: #0F1419; --xlk-color-muted: #536471; --xlk-color-border: #ECECF1; --xlk-shadow-button: none; }
-
-/* tablet-scale:begin */
-@media (min-width: 500px) {.edit-page { padding: 12px 15px calc(26px + env(safe-area-inset-bottom)); }
-.edit-page .edit-avatar-button { width: 100%; padding: 4px 0 19px; margin: 0; font-size: 12px; }
-.edit-avatar-wrap { margin: 0 0 9px; }
-.edit-avatar { width: 79px; height: 79px; border-radius: 50%; border: 3.5px solid #FFF; }
-.edit-camera { width: 25.5px; height: 25.5px; border: 2px solid #FFF; border-radius: 50%; }
-.edit-camera image { width: 14px; height: 14px; }
-.edit-card { padding: 2px 13px; border-radius: 13px; }
-.edit-field { gap: 10px; min-height: 50px; border-bottom: 0.5px solid var(--xlk-color-border); }
-.edit-field label, .edit-bio label { font-size: 13px; }
-.edit-field label { width: 60px; }
-.edit-field input { width: 0; height: 40px; font-size: 12.5px; }
-.edit-bio { padding: 12px 0; border-bottom: 0.5px solid var(--xlk-color-border); }
-.edit-bio > view > text { font-size: 12px; }
-.edit-bio textarea { width: 100%; min-height: 64px; padding-top: 8px; font-size: 12.5px; }
-.edit-year { border-bottom: 0; }
-.edit-disclosure { padding: 0 0 9px; font-size: 12px; }
-.edit-note { gap: 6px; margin: 14px 0 18px; padding: 10px; border-radius: 9px; font-size: 12px; }
-.edit-note image { width: 13.5px; height: 13.5px; margin-top: 2px; }
-.edit-page .edit-save { width: 100%; padding: 9.5px; margin: 0; border-radius: 25px; font-size: 14px; }
-.edit-local-note { padding: 10px 9px 0; font-size: 12px; }
-.edit-error { gap: 9px; padding: 25px 10px; border-radius: 12px; font-size: 12px; }
-.edit-error image { width: 34px; height: 34px; margin: 10px; }
-.edit-page .edit-error button { width: auto; margin: 0; border-radius: 20px; padding: 5px 17px; font-size: 12px; }
+.edit-disclosure {
+  display: block;
+  padding: 12px 0 4px;
+  font-size: 12px;
+  color: #536471;
+  line-height: 18px;
 }
 
-/* tablet-scale:end */
+.edit-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 16px 16px 24px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f7f9f9;
+  font-size: 12px;
+  color: #536471;
+  line-height: 18px;
+}
+.edit-note image { flex-shrink: 0; width: 15px; height: 15px; margin-top: 2px; filter: grayscale(1); opacity: 0.7; }
+
+.edit-page .edit-save {
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  min-width: 0;
+  height: 44px;
+  line-height: 44px;
+  padding: 0;
+  margin: 0 16px !important;
+  background: #0f1419;
+  color: #fff;
+  border-radius: 22px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.edit-page .edit-save[disabled] { opacity: 0.5; background: #0f1419; color: #fff; }
+
+.edit-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 56px 24px;
+  background: #fff;
+  color: #536471;
+  text-align: center;
+  font-size: 14px;
+}
+.edit-error image { width: 44px; height: 44px; margin-bottom: 6px; filter: grayscale(1); }
+.edit-page .edit-error button {
+  margin: 12px 0 0 !important;
+  padding: 0 22px;
+  height: 36px;
+  line-height: 36px;
+  border-radius: 18px;
+  background: #0f1419;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (min-width: 500px) {
+  .edit-page { max-width: 460px; margin: 0 auto; }
+}

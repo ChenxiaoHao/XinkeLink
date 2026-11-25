@@ -8,6 +8,12 @@ const ok = (data: unknown) => new Response(JSON.stringify({ code: 'OK', data, me
 const failure = (status: number, code: string) => new Response(JSON.stringify({ code, data: null, message: '记录已更新，请刷新后重试', requestId: 'req-conflict' }), { status })
 const admin = { id: '7', loginName: 'operator', displayName: '管理员甲', role: 'ADMIN' }
 const tokens = { accessToken: 'memory-access', expiresIn: 900, csrfToken: 'csrf-one', admin }
+const otherTokens = { ...tokens, accessToken: 'other-access', csrfToken: 'csrf-other', admin: { ...admin, id: '8', loginName: 'other' } }
+function deferredResponse() {
+  let resolve!: (response: Response) => void
+  const response = new Promise<Response>(done => { resolve = done })
+  return { response, resolve }
+}
 const post = { id: '41', title: '真实帖子', content: '后端内容', category: 'lost_found', status: 'visible', reviewState: 'normal', createdAt: '2026-10-25T00:00:00.000Z', author: { id: '9', name: '真实作者', avatar: null, selfReported: true }, images: [{ imageId: '5', url: '/api/v1/images/5/content?grant=x', width: 200, height: 100, expiresAt: null }], likeCount: 3, visibleCommentCount: 2, version: 4 }
 
 beforeEach(() => {
@@ -66,6 +72,94 @@ describe('real admin HTTP boundary', () => {
     await client.login('operator', 'secret')
     await expect(client.download('/audit-events/export')).rejects.toMatchObject({ status: 401 })
     expect(downloads).toBe(2)
+  })
+
+  it.each(['request', 'download'] as const)('discards a late 401 for %s after logging in as another admin', async method => {
+    const original = deferredResponse()
+    const uses: Array<string | null> = []
+    const client = new AdminHttpClient(async (url, init) => {
+      if (String(url).endsWith('/auth/login')) return ok(String(init?.body).includes('other') ? otherTokens : tokens)
+      uses.push(new Headers(init?.headers).get('Authorization'))
+      return uses.length === 1 ? original.response : ok({})
+    })
+    await client.login('operator', 'secret')
+    const operation = method === 'request' ? client.request('/posts', { method: 'POST', body: '{}' }) : client.download('/audit-events/export')
+    const rejected = expect(operation).rejects.toMatchObject({ code: 'SESSION_CHANGED' })
+    await client.login('other', 'secret')
+    original.resolve(failure(401, 'TOKEN_EXPIRED'))
+
+    await rejected
+    expect(uses).toEqual(['Bearer memory-access'])
+    expect(client.admin.value?.id).toBe('8')
+  })
+
+  it('ignores an old refresh after logout and revokes the rotated cookie using its CSRF token', async () => {
+    const rotation = deferredResponse()
+    const csrf: Array<string | null> = []
+    const client = new AdminHttpClient(async (url, init) => {
+      if (String(url).endsWith('/auth/login')) return ok(tokens)
+      if (String(url).endsWith('/auth/refresh')) return rotation.response
+      csrf.push(new Headers(init?.headers).get('X-CSRF-Token'))
+      return ok({ loggedOut: true })
+    })
+    await client.login('operator', 'secret')
+    const refreshing = client.refresh()
+    const rejected = expect(refreshing).rejects.toMatchObject({ code: 'SESSION_CHANGED' })
+    await Promise.resolve()
+    const loggingOut = client.logout()
+    expect(client.admin.value).toBeNull()
+    expect(csrf).toEqual([])
+    rotation.resolve(ok({ ...tokens, accessToken: 'rotated', csrfToken: 'csrf-rotated' }))
+
+    await rejected
+    await loggingOut
+    expect(csrf).toEqual(['csrf-rotated'])
+    expect(client.admin.value).toBeNull()
+  })
+
+  it('does not send an expired bearer to the cookie refresh endpoint', async () => {
+    const client = new AdminHttpClient(async (url, init) => {
+      const bearer = new Headers(init?.headers).get('Authorization')
+      if (String(url).endsWith('/auth/login')) return ok(tokens)
+      if (String(url).endsWith('/auth/refresh')) return bearer ? failure(401, 'TOKEN_EXPIRED') : ok({ ...tokens, accessToken: 'rotated' })
+      return bearer === 'Bearer rotated' ? ok({ live: true }) : failure(401, 'TOKEN_EXPIRED')
+    })
+    await client.login('operator', 'secret')
+    await expect(client.request('/posts')).resolves.toEqual({ live: true })
+  })
+
+  it('does not let a failed old sign-in clear a newer administrator', async () => {
+    const original = deferredResponse()
+    const client = new AdminHttpClient(async (_url, init) => String(init?.body).includes('other') ? ok(otherTokens) : original.response)
+    const outdated = client.login('operator', 'secret')
+    const rejected = expect(outdated).rejects.toMatchObject({ code: 'SESSION_CHANGED' })
+    await Promise.resolve()
+    const current = client.login('other', 'secret')
+    original.resolve(failure(401, 'INVALID_CREDENTIALS'))
+
+    await rejected
+    await current
+    expect(client.admin.value?.id).toBe('8')
+  })
+
+  it('blocks a protected operation started during a pending account change', async () => {
+    const login = deferredResponse()
+    const operation = deferredResponse()
+    const uses: Array<string | null> = []
+    const client = new AdminHttpClient(async (url, init) => {
+      if (String(url).endsWith('/auth/login')) return String(init?.body).includes('other') ? login.response : ok(tokens)
+      uses.push(new Headers(init?.headers).get('Authorization'))
+      return uses.length === 1 ? operation.response : ok({})
+    })
+    await client.login('operator', 'secret')
+    const changingAccount = client.login('other', 'secret')
+    const pending = client.request('/posts', { method: 'POST', body: '{}' }).then(() => 'sent', error => error.code)
+    login.resolve(ok(otherTokens))
+    await changingAccount
+    operation.resolve(failure(401, 'TOKEN_EXPIRED'))
+
+    expect(await pending).toBe('SESSION_CHANGED')
+    expect(uses).toEqual([])
   })
 })
 

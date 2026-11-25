@@ -4,7 +4,7 @@ const { loadPage } = require('./page-harness.cjs');
 const { loadComponent } = require('./native-harness.cjs');
 const repo = () => require('../.test-dist/features/forum/repository.js');
 function runtime(overrides = {}) {
-  const saved = new Map(), calls = { toasts: [], previews: [], routes: [] };
+  const saved = new Map([['xinkelink.session.v1', true]]), calls = { toasts: [], previews: [], routes: [] };
   const wx = { getStorageSync: k => saved.get(k), setStorageSync: (k,v) => saved.set(k,v),
     showToast: x => calls.toasts.push(x.title), navigateTo: x => calls.routes.push(x.url),
     previewImage: x => calls.previews.push(x), env: { USER_DATA_PATH: 'wxfile://usr' },
@@ -30,13 +30,13 @@ test('detail and home reload the same saved interactions in both directions', ()
 test('unreadable interaction storage blocks writes and retains the visible detail', () => {
   const r = runtime(); const p = loadPage('pages/forum-detail/index.js', r); p.onLoad({id:'post-001'});
   r.wx.getStorageSync = () => { throw new Error('read'); };
-  p.onLikeTap(); assert.equal(r.saved.size, 0); assert.equal(p.data.post.likeCount, 28);
+  p.onLikeTap(); assert.equal(r.saved.size, 1); assert.equal(p.data.post.likeCount, 28);
   assert.equal(r.calls.toasts.length,1);
   assert.throws(() => repo().readForum(r.wx));
 });
 test('missing detail is empty and cannot write interactions', () => {
   const r = runtime(); const p = loadPage('pages/forum-detail/index.js',r);p.onLoad({id:'missing'});p.onLikeTap();
-  assert.equal(p.data.post,null); assert.equal(r.saved.size,0);
+  assert.equal(p.data.post,null); assert.equal(r.saved.size,1);
 });
 test('feed card opens its public ID while buttons keep their own events', () => {
   const {instance,events}=loadComponent('components/forum-post-card/index.js'); instance.data.post={id:'post-002'};

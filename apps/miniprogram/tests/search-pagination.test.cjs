@@ -8,7 +8,7 @@ function setup(handler) {
     const url = new URL(o.url); calls.push(url);
     handler(url, value => o.success({ statusCode: 200, data: { code: 'OK', data: value } }), () => o.fail({ errMsg: 'offline' }));
   } };
-  return { page: loadPage('pages/search/index.js', { wx, fixture: false, betaPhase: 'open' }), calls, toasts };
+  return { page: loadPage('pages/search/index.js', { wx, fixture: false }), calls, toasts };
 }
 const response = (items, cursor = null) => ({ result: { items, hasMore: !!cursor, nextCursor: cursor } });
 

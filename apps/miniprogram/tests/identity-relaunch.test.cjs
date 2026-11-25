@@ -55,8 +55,8 @@ test('setLocalSession without a login-state change does not reLaunch', () => {
 test('guest drawer shows the default avatar and 访客 instead of the previous user', () => {
   const { saved, wxStub } = storageStub(false);
   saved.set(PROFILE_KEY, { version: 1, nickname: '上个用户', avatar: '/assets/mock/forum/avatar-zhou.jpg', bio: '', major: '', className: '', studentId: '', year: '' });
-  const { instance, definition } = loadComponent('components/app-shell/index.js', { wx: wxStub });
-  definition.pageLifetimes.show.call(instance);
+  const { instance } = loadComponent('components/app-shell/index.js', { wx: wxStub });
+  instance.openDrawer();
   assert.equal(instance.data.identity.nickname, '访客');
   assert.equal(instance.data.identity.avatar, GUEST_AVATAR);
   assert.equal(instance.data.loggedIn, false);
@@ -64,8 +64,8 @@ test('guest drawer shows the default avatar and 访客 instead of the previous u
 
 test('logging out inside the drawer resets the identity card to the guest view', () => {
   const { wxStub, relaunches } = storageStub(true);
-  const { instance, definition } = loadComponent('components/app-shell/index.js', { wx: wxStub });
-  definition.pageLifetimes.show.call(instance);
+  const { instance } = loadComponent('components/app-shell/index.js', { wx: wxStub });
+  instance.openDrawer();
   assert.equal(instance.data.identity.nickname, '陈林舟', '登录态抽屉先显示本人昵称');
   instance.onLogoutTap();
   assert.equal(wxStub.modals.length, 1);

@@ -61,7 +61,7 @@ export function updatePreferences(storage: LocalStorage, patch: Partial<Omit<Pre
 }
 export function readLocalSession(storage: LocalStorage): boolean {
   const value = storage.getStorageSync(SESSION_KEY)
-  if (unset(value)) return true
+  if (unset(value)) return false
   if (typeof value !== 'boolean') throw new Error('本地会话读取失败')
   return value
 }

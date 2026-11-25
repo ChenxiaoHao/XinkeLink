@@ -32,6 +32,7 @@ test('profile and session writes broadcast identity changes to subscribers', () 
 
 test('page header reads identity on attach and follows in-page login/logout without onShow', () => {
   const s = storage(), f = fileApi();
+  s.saved.set(repo.SESSION_KEY, true);
   const wx = {
     __fixtureMode: true,
     getStorageSync: s.getStorageSync, setStorageSync: s.setStorageSync,

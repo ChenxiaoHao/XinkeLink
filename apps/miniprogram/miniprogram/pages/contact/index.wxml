@@ -1,9 +1,8 @@
 <app-shell id="app-shell">
 <view class="inbox-header">
-  <!-- 「全部 / 未读」按设计稿放回顶栏右侧，搜索独占一行。 -->
-  <page-header title="聊天" />
+  <page-header title="私信" action="plus" bind:action="onNewChat" />
   <view class="inbox-tools">
-    <view class="inbox-search"><image src="/assets/icons/x-search-muted.png" /><input value="{{query}}" placeholder="搜索" bindinput="onQueryInput" /></view>
+    <view class="inbox-search"><image src="/assets/icons/x-search-muted.png" /><input value="{{query}}" placeholder="搜索私信" bindinput="onQueryInput" /></view>
   </view>
 </view>
 <view class="inbox-body">
@@ -19,9 +18,11 @@
       <image class="conversation-avatar" src="{{item.peer.avatar}}" mode="aspectFill" data-kind="conversation" data-id="{{item.id}}" data-source="{{item.peer.avatar}}" binderror="onRemoteAvatarError" />
       <view class="conversation-text">
         <view class="conversation-top"><text class="conversation-name">{{item.peer.nickname}}</text><text class="conversation-time">{{item.timeLabel}}</text></view>
-        <text class="conversation-preview">{{item.lastMessage}}</text>
+        <view class="conversation-bottom">
+          <text class="conversation-preview">{{item.lastMessage}}</text>
+          <view wx:if="{{item.unread}}" class="conversation-dot" />
+        </view>
       </view>
-      <view wx:if="{{item.unread}}" class="conversation-dot" />
     </view>
   </block>
   <view wx:else class="inbox-empty">

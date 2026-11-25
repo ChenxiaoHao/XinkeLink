@@ -2,7 +2,7 @@ const test=require('node:test'), assert=require('node:assert/strict');
 const {loadPage}=require('./page-harness.cjs');
 const repo=()=>require('../.test-dist/features/forum/repository.js');
 const comments=()=>require('../.test-dist/features/forum/comments.js');
-function runtime(){const saved=new Map(),calls={toasts:[],modals:[]};const wx={getStorageSync:k=>saved.get(k),setStorageSync:(k,v)=>saved.set(k,v),showToast:x=>calls.toasts.push(x.title),showModal:x=>calls.modals.push(x),hideKeyboard(){}};return{saved,calls,wx};}
+function runtime(){const saved=new Map([['xinkelink.session.v1',true]]),calls={toasts:[],modals:[]};const wx={getStorageSync:k=>saved.get(k),setStorageSync:(k,v)=>saved.set(k,v),showToast:x=>calls.toasts.push(x.title),showModal:x=>calls.modals.push(x),hideKeyboard(){}};return{saved,calls,wx};}
 function event(id){return{currentTarget:{dataset:{id}}};}
 test('initial comment records and projected counts agree for every mock post',()=>{
  const r=runtime(),s=repo().readForum(r.wx);

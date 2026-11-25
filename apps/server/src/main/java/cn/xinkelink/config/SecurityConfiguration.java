@@ -3,8 +3,6 @@ package cn.xinkelink.config;
 import cn.xinkelink.auth.AuthJwtAuthenticator;
 import cn.xinkelink.auth.AdminBrowserSecurity;
 import cn.xinkelink.auth.token.JwtTokenService;
-import cn.xinkelink.beta.BetaAccessFilter;
-import cn.xinkelink.beta.BetaService;
 import cn.xinkelink.common.api.ApiResponse;
 import cn.xinkelink.common.api.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +21,6 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
@@ -37,7 +34,7 @@ public class SecurityConfiguration {
     @Bean
     SecurityFilterChain apiSecurity(HttpSecurity http, JsonMapper mapper,
             ObjectProvider<JwtTokenService> tokens, ObjectProvider<AuthJwtAuthenticator> authenticators,
-            ObjectProvider<AdminBrowserSecurity> browsers, ObjectProvider<BetaService> betas) {
+            ObjectProvider<AdminBrowserSecurity> browsers) {
         boolean authEnabled = tokens.getIfAvailable() != null;
         AuthenticationEntryPoint entry = (request, response, exception) -> {
             // 过期Bearer会先于Controller失败，退出响应仍需清除受信后台的刷新Cookie。
@@ -54,12 +51,13 @@ public class SecurityConfiguration {
                 // Bearer不依赖浏览器Cookie；后台刷新/退出另行严格检查Origin和会话绑定CSRF。
                 .csrf(csrf -> {
                     if (authEnabled) csrf.ignoringRequestMatchers(request -> AUTH_PUBLIC.contains(path(request))
-                            || path(request).equals("/api/v1/auth/logout") || bearer(request));
+                            || path(request).equals("/api/v1/auth/logout")
+                            || statisticsPost(request) || bearer(request));
                 })
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/v1/health", "/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
                     if (authEnabled) auth.requestMatchers(AUTH_PUBLIC.toArray(String[]::new)).permitAll();
-                    if (authEnabled) auth.requestMatchers(HttpMethod.GET,"/api/v1/beta/access").permitAll();
+                    if (authEnabled) auth.requestMatchers(HttpMethod.POST,"/api/v1/statistics/anonymous-credential","/api/v1/statistics/post-views").permitAll();
                     auth.requestMatchers("/api/v1/admin/**").hasRole("ADMIN");
                     if (authEnabled) auth.requestMatchers(HttpMethod.GET,"/api/v1/posts","/api/v1/posts/*",
                             "/api/v1/posts/*/comments","/api/v1/comments/*/replies",
@@ -82,11 +80,11 @@ public class SecurityConfiguration {
                 .jwt(jwt -> jwt.decoder(tokens.getObject())
                         .jwtAuthenticationConverter(authenticators.getObject()::authenticate))
                 .authenticationEntryPoint(entry));
-        betas.ifAvailable(beta -> http.addFilterBefore(new BetaAccessFilter(beta,mapper),AuthorizationFilter.class));
         return http.build();
     }
 
     private static String path(HttpServletRequest request) { return request.getRequestURI().substring(request.getContextPath().length()); }
+    private static boolean statisticsPost(HttpServletRequest request) { return "POST".equals(request.getMethod()) && Set.of("/api/v1/statistics/anonymous-credential","/api/v1/statistics/post-views").contains(path(request)); }
     private static boolean api(HttpServletRequest request) { return path(request).startsWith("/api/"); }
     private static boolean bearer(HttpServletRequest request) {
         String header = request.getHeader("Authorization");

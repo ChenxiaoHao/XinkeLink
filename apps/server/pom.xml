@@ -21,8 +21,67 @@
     <springdoc.version>3.1.1</springdoc.version>
     <aliyun-oss.version>3.18.5</aliyun-oss.version>
     <xinkelink.build.directory>${project.basedir}/target</xinkelink.build.directory>
+    <canal.protobuf.version>4.35.1</canal.protobuf.version>
   </properties>
   <dependencies>
+    <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>3.0.5</version></dependency>
+    <dependency><groupId>org.jsoup</groupId><artifactId>jsoup</artifactId><version>1.21.2</version></dependency>
+    <dependency><groupId>org.springframework.ai</groupId><artifactId>spring-ai-openai</artifactId><version>2.0.2</version></dependency>
+    <!-- Boot 4.1.1 manages Kafka 4.2.1; raw clients keep this pipeline independent of notification MQ. -->
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+    </dependency>
+    <!-- RocketMQ 5.5.1's encoder requires the Charset overload absent in Canal's older transitive fastjson2. -->
+    <dependency>
+      <groupId>com.alibaba.fastjson2</groupId>
+      <artifactId>fastjson2</artifactId>
+      <version>2.0.63</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.rocketmq</groupId>
+      <artifactId>rocketmq-client</artifactId>
+      <version>5.5.1</version>
+      <exclusions>
+        <!-- Remoting client does not use server RocksDB storage or netty-all's native platform bundle. -->
+        <exclusion><groupId>org.rocksdb</groupId><artifactId>rocksdbjni</artifactId></exclusion>
+        <exclusion><groupId>io.netty</groupId><artifactId>netty-all</artifactId></exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>${canal.protobuf.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.alibaba.otter</groupId>
+      <artifactId>canal.client</artifactId>
+      <version>1.1.8</version>
+      <exclusions>
+        <!-- Direct TCP uses Java NIO; retain the existing Redis Netty modules, not netty-all's platform bundle. -->
+        <exclusion><groupId>io.netty</groupId><artifactId>netty-all</artifactId></exclusion>
+        <exclusion><groupId>org.slf4j</groupId><artifactId>slf4j-log4j12</artifactId></exclusion>
+        <exclusion><groupId>org.slf4j</groupId><artifactId>slf4j-reload4j</artifactId></exclusion>
+        <exclusion><groupId>log4j</groupId><artifactId>log4j</artifactId></exclusion>
+        <exclusion><groupId>org.slf4j</groupId><artifactId>jcl-over-slf4j</artifactId></exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.alibaba.otter</groupId>
+      <artifactId>canal.protocol</artifactId>
+      <version>1.1.8</version>
+      <exclusions>
+        <exclusion><groupId>io.netty</groupId><artifactId>netty-all</artifactId></exclusion>
+        <exclusion><groupId>org.slf4j</groupId><artifactId>slf4j-log4j12</artifactId></exclusion>
+        <exclusion><groupId>org.slf4j</groupId><artifactId>slf4j-reload4j</artifactId></exclusion>
+        <exclusion><groupId>log4j</groupId><artifactId>log4j</artifactId></exclusion>
+        <exclusion><groupId>org.slf4j</groupId><artifactId>jcl-over-slf4j</artifactId></exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.aliyun.oss</groupId>
       <artifactId>aliyun-sdk-oss</artifactId>
@@ -97,7 +156,32 @@
   </dependencies>
   <build>
     <directory>${xinkelink.build.directory}</directory>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.7.1</version>
+      </extension>
+    </extensions>
     <plugins>
+      <plugin>
+        <groupId>org.xolstice.maven.plugins</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <version>0.6.1</version>
+        <configuration>
+          <protocArtifact>com.google.protobuf:protoc:${canal.protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+          <clearOutputDirectory>false</clearOutputDirectory>
+        </configuration>
+        <executions>
+          <!-- Upstream schemas have overlapping proto enum symbols and are compiled separately upstream too. -->
+          <execution><id>canal-entry</id><goals><goal>compile</goal></goals>
+            <configuration><includes><include>canal/EntryProtocol.proto</include></includes></configuration>
+          </execution>
+          <execution><id>canal-packet</id><goals><goal>compile</goal></goals>
+            <configuration><includes><include>canal/CanalProtocol.proto</include></includes></configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

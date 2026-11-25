@@ -2,6 +2,7 @@
 <view class="bookmark-page">
   <view class="bookmark-intro"><text class="bookmark-title">喜欢</text><text class="bookmark-copy">你点过赞的校园动态都在这里。</text></view>
   <view wx:if="{{loadFailed}}" class="bookmark-empty"><text class="bookmark-empty-title">喜欢暂时无法加载</text><button class="bookmark-action" bindtap="onRetryTap">重试</button></view>
+  <view wx:elif="{{!loggedIn}}" class="bookmark-empty"><text class="bookmark-empty-title">登录后可查看喜欢的帖子</text></view>
   <block wx:else>
     <forum-post-card wx:for="{{posts}}" wx:key="id" home post="{{item}}" bind:open="onOpenPost" bind:like="onLikePost" bind:repost="onRepostPost" bind:collect="onCollectPost" />
     <view wx:if="{{!posts.length}}" class="bookmark-empty">

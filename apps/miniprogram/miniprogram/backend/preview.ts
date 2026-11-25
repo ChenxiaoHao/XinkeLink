@@ -1,23 +1,59 @@
-import { ApiError, client, Json, Runtime } from './client'
-import { media } from './adapters'
+import { ApiClient, ApiError, client, Json, Runtime } from './client'
+import { media, profileView } from './adapters'
 import { backendImageId, imageDue } from './image-urls'
 
 const flights = new WeakMap<Runtime, Map<string, Promise<string>>>()
 
 function renewImage(runtime: Runtime, id: string): Promise<string> {
+  const api = client(runtime)
+  const key = JSON.stringify([api.me?.id ?? null, id])
   let pending = flights.get(runtime)
   if (!pending) { pending = new Map(); flights.set(runtime, pending) }
-  if (!pending.has(id)) pending.set(id, client(runtime).request('/images/' + id + '/access').then(value => {
+  if (!pending.has(key)) pending.set(key, api.request('/images/' + id + '/access').then(value => {
     const url = media(value)
     if (backendImageId(url) !== id) throw new Error('图片地址无效')
     return url
-  }).finally(() => pending!.delete(id)))
-  return pending.get(id)!
+  }).finally(() => pending!.delete(key)))
+  return pending.get(key)!
+}
+
+type SessionAvatar = { owner: Json; imageId: string; url: string; renewal?: Promise<string> }
+const sessionAvatars = new WeakMap<ApiClient, SessionAvatar>()
+
+export function sessionAvatar(api: ApiClient): { url: string; renewal?: Promise<string> } {
+  const owner = api.me
+  if (!api.loggedIn || !owner) return { url: '' }
+  const source = profileView(owner).avatar
+  const imageId = backendImageId(source)
+  if (!imageId || !imageDue(source)) return { url: source }
+  let avatar = sessionAvatars.get(api)
+  if (!avatar || avatar.owner !== owner || avatar.imageId !== imageId) {
+    avatar = { owner, imageId, url: '' }
+    sessionAvatars.set(api, avatar)
+  }
+  if (avatar.url && !imageDue(avatar.url)) return { url: avatar.url }
+  const current = avatar
+  current.renewal ??= renewImage(api.runtime, imageId).then(url => {
+    if (api.me !== owner) {
+      const latest = media(api.me?.avatar)
+      return api.loggedIn && api.me?.id === owner.id && backendImageId(latest) === imageId && !imageDue(latest) ? latest : ''
+    }
+    if (sessionAvatars.get(api) !== current || imageDue(url)) return ''
+    current.url = url
+    return url
+  }).catch(() => '').finally(() => { current.renewal = undefined })
+  return { url: '', renewal: current.renewal }
 }
 
 export function needsPreviewRefresh(runtime: unknown, sources: string[]): boolean {
   return (runtime as Runtime).__fixtureMode !== true && sources.some(source => backendImageId(source))
 }
+
+export function imageForDisplay(runtime: Runtime, source: string): Promise<string> {
+  const id = backendImageId(source)
+  return id && imageDue(source) ? renewImage(runtime, id) : Promise.resolve(source)
+}
+
 /** 预览会重新下载图片，先续取权限地址；拒绝访问时不能回退旧签名。 */
 export async function freshPreviewImages(runtime: unknown, sources: string[]): Promise<string[]> {
   const renewed = new Map<string, Promise<string>>()
@@ -41,17 +77,21 @@ export function loadAuthorizedLocalImage(value: unknown, source: string): Promis
   if (!id || !runtime?.request || (!runtime.downloadFile && !runtime.getFileSystemManager) || !runtime.env?.USER_DATA_PATH) {
     return Promise.reject(new ApiError('IMAGE_LOAD_FAILED', '图片暂时无法加载'))
   }
+  const api = client(runtime), owner = api.me?.id
+  const key = JSON.stringify([owner ?? null, id])
+  const current = () => api.me?.id === owner
   let pending = localImageFlights.get(runtime)
   if (!pending) { pending = new Map(); localImageFlights.set(runtime, pending) }
-  if (!pending.has(id)) pending.set(id, (async () => {
+  if (!pending.has(key)) pending.set(key, (async () => {
     try {
       // 每次回退都先向服务端核验当前用户仍有权查看这张图片。
       const [url] = await freshPreviewImages(runtime, [source])
+      if (!current()) throw new Error('图片查看账号已变化')
       const filePath = runtime.env!.USER_DATA_PATH + '/xinkelink-image-' + id + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.png'
       // 真机优先使用微信下载器，避免不同设备对二进制 request 的兼容差异。
       if (runtime.downloadFile) {
         try {
-          return await new Promise<string>((resolve, reject) => runtime.downloadFile!({
+          const local = await new Promise<string>((resolve, reject) => runtime.downloadFile!({
             url, timeout: 15000,
             success: (result: { statusCode: number; filePath?: string; tempFilePath?: string }) => {
               const path = result.filePath || result.tempFilePath
@@ -60,7 +100,9 @@ export function loadAuthorizedLocalImage(value: unknown, source: string): Promis
             },
             fail: () => reject(new Error('图片下载失败')),
           }))
-        } catch (error) { if (!runtime.getFileSystemManager) throw error }
+          if (!current()) throw new Error('图片查看账号已变化')
+          return local
+        } catch (error) { if (!current() || !runtime.getFileSystemManager) throw error }
       }
       const bytes = await new Promise<ArrayBuffer>((resolve, reject) => runtime.request({
         url, method: 'GET', responseType: 'arraybuffer', timeout: 15000,
@@ -70,16 +112,18 @@ export function loadAuthorizedLocalImage(value: unknown, source: string): Promis
         },
         fail: () => reject(new Error('图片请求失败')),
       }))
+      if (!current()) throw new Error('图片查看账号已变化')
       await new Promise<void>((resolve, reject) => runtime.getFileSystemManager!().writeFile({
         filePath, data: bytes, success: resolve, fail: reject,
       }))
+      if (!current()) throw new Error('图片查看账号已变化')
       return filePath
     } catch {
       // 不把临时 grant 或底层网络错误带到日志和界面中。
       throw new ApiError('IMAGE_LOAD_FAILED', '图片暂时无法加载')
     }
-  })().finally(() => pending!.delete(id)))
-  return pending.get(id)!
+  })().finally(() => pending!.delete(key)))
+  return pending.get(key)!
 }
 
 /** 页面显示时检查一次即将过期的图片地址；图片报错时仍可按需续期。 */

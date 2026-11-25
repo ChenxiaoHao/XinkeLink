@@ -49,6 +49,17 @@ class AdminHttpIT {
         replyId=insert("xl_comment","target_type,target_id,author_id,content,root_id,reply_to_id",List.of("post",postId,owner,marker+"回复",rootId,rootId));
     }
 
+    @Test void filtersAllForumCategoriesAndRejectsSortNamesAsCategories() throws Exception {
+        for(String category:List.of("campus","lost_found","study","help","secondhand","complain","buddy")) {
+            jdbc.update("UPDATE xl_post SET category=? WHERE id=?",category,postId);
+            mvc.perform(get("/api/v1/admin/posts").param("keyword",marker).param("category",category).header("Authorization","Bearer "+adminToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.items[0].category").value(category));
+        }
+        for(String category:List.of("recommended","latest","product"))
+            mvc.perform(get("/api/v1/admin/posts").param("category",category).header("Authorization","Bearer "+adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
     @Test void everyReadEndpointRequiresAdminAndReturnsItsContract() throws Exception {
         List<String> paths=List.of("/dashboard?range=7d","/posts?keyword="+marker,"/posts/"+postId,"/posts/"+postId+"/comments",
                 "/comments?keyword="+marker,"/comments/"+replyId+"/context",

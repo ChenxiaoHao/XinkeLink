@@ -29,6 +29,8 @@ export class BackendService {
     return result
   }
   async togglePost(id: string, field: string, current: boolean): Promise<Json> {
+    if (field === 'reposted') throw new Error('转发功能尚未开放')
+    if (field !== 'liked' && field !== 'collected') throw new Error('互动类型无效')
     return this.api.request('/posts/' + encodeURIComponent(id) + '/' + (field === 'liked' ? 'like' : 'favorite'), current ? 'DELETE' : 'PUT')
   }
   async comments(id: string, expanded: string[], repliesOpen: string[]): Promise<Json[]> {
@@ -50,10 +52,6 @@ export class BackendService {
     const [user,posts] = await Promise.all([this.api.request('/users/'+encodeURIComponent(id)),this.all('/users/'+encodeURIComponent(id)+'/posts')])
     const {studentId:_private,...profile}=profileView(user)
     return {...profile,id:user.id,isSelf:user.id===this.api.me?.id,posts:posts.map(postView),likeCount:user.stats.likeCount}
-  }
-  async collections(): Promise<Json> {
-    const posts=await this.all('/me/favorites',{type:'post'})
-    return {posts:posts.map(item=>item.item?postView(item.item):{id:item.targetId,content:'帖子已不可用',images:[],authorName:'',avatar:'/assets/icons/user-round-muted.png',collected:true,unavailable:true})}
   }
   async likes(): Promise<Json> {
     const posts=await this.all('/me/likes',{type:'post'})

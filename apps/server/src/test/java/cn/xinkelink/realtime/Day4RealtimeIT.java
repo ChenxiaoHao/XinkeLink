@@ -73,6 +73,11 @@ class Day4RealtimeIT {
         call("PUT","/api/v1/conversations/"+conversation+"/read",Map.of("readUpToSequence","1"),reader.accessToken(),200);
         assertEquals("1",event(a,"read.updated").get("payload").get("readThroughSequence").stringValue());
         assertEquals("1",event(b,"read.updated").get("payload").get("readThroughSequence").stringValue());
+        // 首次read还会向读者发送会话及未读更新；先验证并消费该次合法事件。
+        JsonNode updatedConversation=event(b,"conversation.updated").get("payload");
+        assertEquals(conversation,updatedConversation.get("id").stringValue());
+        assertEquals(0,updatedConversation.get("unreadCount").intValue());
+        assertEquals(0,event(b,"unread.updated").at("/payload/raw/messages").intValue());
         // 重复确认相同已读位置不得继续广播，否则聊天页收到自己的事件后会无限重载。
         call("PUT","/api/v1/conversations/"+conversation+"/read",Map.of("readUpToSequence","1"),reader.accessToken(),200);
         assertNull(a.events.poll(300,TimeUnit.MILLISECONDS));

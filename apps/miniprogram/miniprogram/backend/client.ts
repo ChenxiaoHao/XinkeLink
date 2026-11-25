@@ -27,7 +27,6 @@ export class ApiClient {
   private signingIn: Promise<void> | null = null
   private profilePrompt: (() => Promise<boolean>) | null = null
   private profilePromptPending: Promise<boolean> | null = null
-  private betaAccessRequired: (() => void) | null = null
   private listeners = new Set<() => void>()
   private sessionGeneration = 0
   private lastNotifiedLoggedIn: boolean | null = null
@@ -44,8 +43,7 @@ export class ApiClient {
   private changed(): void {
     this.listeners.forEach(listener => listener())
     // 退出登录（已登录→访客）的后端汇合点：reLaunch 首页让所有页面按访客身份重载。
-    // 登录侧（访客→已登录）不在这里跳：登录流程有自己的目的地（beta 门禁兑换后 reLaunch
-    // 到 redirect 目标），中途跳转会摧毁进行中的流程页；抽屉登录由 refreshIdentity 就地刷新。
+    // 登录流程自行处理跳转或就地刷新，避免销毁仍在进行中的页面操作。
     // token 静默刷新（save）、资料更新（setMe）登录态不变，不触发跳转。
     const now = this.loggedIn
     if (this.lastNotifiedLoggedIn === true && now === false) this.runtime.reLaunch?.({ url: '/pages/forum/index' })
@@ -65,7 +63,6 @@ export class ApiClient {
   }
   setMe(me: Json, profileConfirmed = this.session?.profileConfirmed !== false): void { if (this.session) { this.session = { ...this.session, me, profileConfirmed }; this.runtime.setStorageSync(SESSION_STORAGE_KEY, this.session); this.changed() } }
   setProfilePrompt(prompt: () => Promise<boolean>): void { this.profilePrompt = prompt }
-  setBetaAccessRequired(handler: () => void): void { this.betaAccessRequired = handler }
   async login(requireProfile = false): Promise<void> {
     if (this.signingIn) return this.signingIn
     const generation = this.sessionGeneration
@@ -100,15 +97,14 @@ export class ApiClient {
       this.runtime.showToast?.({ title, icon: 'none' }); return false
     }
   }
-  private raw(path: string, method: string, data?: Json, token?: string, headers: Json = {}): Promise<any> {
+  private raw(path: string, method: string, data?: Json, token?: string, headers: Json = {}, timeoutMs = 15000): Promise<any> {
     return new Promise((resolve, reject) => {
       this.runtime.request({ url: this.origin + API_PREFIX + path, method, data,
-        timeout: 15000, header: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...headers },
+        timeout: timeoutMs, header: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...headers },
         success: (result: Json) => {
           const body = result.data
           if (result.statusCode >= 200 && result.statusCode < 300 && body?.code === 'OK') resolve(body.data)
           else {
-            if (result.statusCode === 403 && body?.code === 'BETA_ACCESS_REQUIRED') this.betaAccessRequired?.()
             reject(new ApiError(body?.code || 'HTTP_ERROR', body?.message || '服务暂不可用，请重试', result.statusCode, body?.requestId))
           }
         }, fail: () => reject(new ApiError('NETWORK_ERROR', '网络连接失败，请检查网络后重试')) })
@@ -142,6 +138,15 @@ export class ApiClient {
       catch (retryError) { if (retryError instanceof ApiError && retryError.status === 401) this.clear(); throw retryError }
     }
   }
+  /** A statistics retry belongs to the identity that displayed the page, including across token refresh. */
+  async requestBound(path: string, method: string, data: Json, current: () => boolean, authenticated: boolean, timeoutMs = 15000): Promise<any> {
+    if (!current()) throw new ApiError('STATISTICS_IDENTITY_CHANGED', '统计会话已变化')
+    if (authenticated && this.session && this.session.expiresAt <= Date.now() + 30000) await this.refresh()
+    if (!current()) throw new ApiError('STATISTICS_IDENTITY_CHANGED', '统计会话已变化')
+    // A guest statistics credential never gains login authority from a partially completed login.
+    const token = authenticated ? this.token : undefined
+    return this.raw(path, method, data, token, {}, timeoutMs)
+  }
   async upload(filePath: string, purpose: string): Promise<Json> {
     if (!this.session) throw new ApiError('UNAUTHENTICATED', '请先微信登录', 401)
     if (this.session.expiresAt <= Date.now() + 30000) await this.refresh()
@@ -154,7 +159,6 @@ export class ApiClient {
           try { body = typeof result.data === 'string' ? JSON.parse(result.data) : result.data } catch { reject(new ApiError('INVALID_RESPONSE', '图片服务响应有误')); return }
           if (result.statusCode >= 200 && result.statusCode < 300 && body.code === 'OK') resolve(body.data)
           else {
-            if (result.statusCode === 403 && body.code === 'BETA_ACCESS_REQUIRED') this.betaAccessRequired?.()
             reject(new ApiError(body.code || 'UPLOAD_ERROR', body.message || '图片上传失败', result.statusCode))
           }
         }, fail: () => reject(new ApiError('NETWORK_ERROR', '图片上传失败，请重试')) })

@@ -6,7 +6,7 @@ const p = require('../.test-dist/features/profile/repository.js');
 const f = require('../.test-dist/features/forum/repository.js');
 
 function api() {
-  const saved = new Map(), navigation = [], toasts = [], copied = [], removed = [];
+  const saved = new Map([[p.SESSION_KEY, true]]), navigation = [], toasts = [], copied = [], removed = [];
   return { saved, navigation, toasts, copied, removed,
     getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value),
     navigateTo: options => navigation.push(options.url), redirectTo: options => navigation.push(options.url),
@@ -35,7 +35,7 @@ test('profile tab derives own counts, refreshes identity and retains every menu 
 });
 
 test('profile storage failures show a retry state instead of claiming empty data', () => {
-  const wx = api(); wx.getStorageSync = () => { throw Error('disk'); };
+  const wx = api(); wx.getStorageSync = key => { if (key === p.SESSION_KEY) return true; throw Error('disk'); };
   const subject = page('profile', wx); subject.onShow(); assert.equal(subject.data.loadFailed, true);
   wx.getStorageSync = key => wx.saved.get(key); subject.reload(); assert.equal(subject.data.loadFailed, false);
 });

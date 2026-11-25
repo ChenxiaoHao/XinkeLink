@@ -26,7 +26,7 @@ function runtime(overrides={}) {
  return {wx,saved,calls,routes,toasts,get loginCalls(){return loginCalls;}};
 }
 // 此组验证认证传输与续接；真实资料弹层由 profile-auth-sheet 测试单独覆盖。
-const page=(name,r)=>{const p=loadPage(`pages/${name}/index.js`,{...r,fixture:false,betaPhase:'open'});p.requestProfileConsent=async()=>{await client(r.wx).login();return true};return p};
+const page=(name,r)=>{const p=loadPage(`pages/${name}/index.js`,{...r,fixture:false});p.requestProfileConsent=async()=>{await client(r.wx).login();return true};return p};
 
 test('guest profile says 登录; main card and login button sign in on the same page with real profile and summary',async()=>{
  const r=runtime(),p=page('profile',r);await p.onShow();assert.equal(p.data.profile.nickname,'登录');assert.equal(r.calls.length,0);

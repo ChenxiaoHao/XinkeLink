@@ -16,7 +16,7 @@ test('P1 screens for shared search, content reports and chat settings are regist
 
 test('search keeps local history and opens post results', () => {
   const { loadPage } = require('./page-harness.cjs');
-  const saved = new Map(), routes = [];
+  const saved = new Map([['xinkelink.session.v1', true]]), routes = [];
   const wx = { getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value),
     navigateTo: options => routes.push(options.url), navigateBack() {}, switchTab() {}, showToast() {} };
   const page = loadPage('pages/search/index.js', { wx });
@@ -35,7 +35,7 @@ test('search keeps local history and opens post results', () => {
 
 test('search clear and cancel return to discovery, and unmatched queries show empty results', () => {
   const { loadPage } = require('./page-harness.cjs');
-  const saved = new Map(); let back = 0, clearHistory;
+  const saved = new Map([['xinkelink.session.v1', true]]); let back = 0, clearHistory;
   const wx = { getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value), navigateTo() {},
     navigateBack() {}, switchTab(options) { assert.equal(options.url, '/pages/forum/index'); back++ }, showToast() {}, showModal: options => { clearHistory = options; } };
   const page = loadPage('pages/search/index.js', { wx });
@@ -56,7 +56,7 @@ test('search clear and cancel return to discovery, and unmatched queries show em
 
 test('local report validates required fields and records the public target', () => {
   const { submitLocalReport, readLocalReports, REPORT_REASONS } = require('../.test-dist/features/moderation/repository.js');
-  const saved = new Map(), storage = { getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value) };
+  const saved = new Map([['xinkelink.session.v1', true]]), storage = { getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value) };
   assert.throws(() => submitLocalReport(storage, { targetKind: 'post', targetId: 'post-001', reason: '', detail: '', evidence: [] }));
   const report = submitLocalReport(storage, { targetKind: 'post', targetId: 'post-001', reason: REPORT_REASONS[0], detail: '请核实这条内容', evidence: [] });
   assert.equal(report.status, 'local-only');
@@ -65,7 +65,7 @@ test('local report validates required fields and records the public target', () 
 
 test('report page validates its target and only shows local-record feedback after save', () => {
   const { loadPage } = require('./page-harness.cjs');
-  const saved = new Map(), modals = [], toasts = [];
+  const saved = new Map([['xinkelink.session.v1', true]]), modals = [], toasts = [];
   const wx = { getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value),
     showToast: options => toasts.push(options.title), showModal: options => { modals.push(options); }, navigateBack() {} };
   const page = loadPage('pages/report/index.js', { wx });
@@ -83,7 +83,7 @@ test('report page validates its target and only shows local-record feedback afte
 test('chat settings persist mute and pin, block sending, and clear local history', () => {
   const contact = require('../.test-dist/features/contact/repository.js');
   const settings = require('../.test-dist/features/contact/settings.js');
-  const saved = new Map(), storage = { getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value) };
+  const saved = new Map([['xinkelink.session.v1', true]]), storage = { getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value) };
   settings.updatePeerChatSettings(storage, 'mock-su', { muted: true, pinned: true });
   assert.equal(contact.listConversations(storage)[0].id, 'mock-su');
   settings.updatePeerChatSettings(storage, 'mock-lin', { muted: true, pinned: true });
@@ -97,7 +97,7 @@ test('chat settings persist mute and pin, block sending, and clear local history
 
 test('chat detail exposes its settings route for the current peer', () => {
   const { loadPage } = require('./page-harness.cjs');
-  const saved = new Map(), routes = [];
+  const saved = new Map([['xinkelink.session.v1', true]]), routes = [];
   const wx = { getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value),
     navigateTo: options => routes.push(options.url) };
   const page = loadPage('pages/contact-chat/index.js', { wx });
@@ -108,7 +108,7 @@ test('chat detail exposes its settings route for the current peer', () => {
 
 test('chat detail reflects a saved block and keeps unsent text without writing it', () => {
   const { loadPage } = require('./page-harness.cjs');
-  const saved = new Map(), toasts = [];
+  const saved = new Map([['xinkelink.session.v1', true]]), toasts = [];
   const wx = { getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value),
     navigateTo() {}, showToast: options => toasts.push(options.title) };
   const settings = require('../.test-dist/features/contact/settings.js');
@@ -125,7 +125,7 @@ test('chat detail reflects a saved block and keeps unsent text without writing i
 
 test('chat settings page opens a searchable message history and navigates back to the selected message', () => {
   const { loadPage } = require('./page-harness.cjs');
-  const saved = new Map(), routes = [];
+  const saved = new Map([['xinkelink.session.v1', true]]), routes = [];
   const wx = { getStorageSync: key => saved.get(key), setStorageSync: (key, value) => saved.set(key, value),
     navigateTo: options => routes.push(options.url), showToast() {}, showModal() {} };
   const page = loadPage('pages/chat-settings/index.js', { wx });

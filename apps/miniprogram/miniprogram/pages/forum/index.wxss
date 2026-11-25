@@ -1,30 +1,87 @@
-/* 首页：6 个真实板块（推荐/最新/校园生活/失物招领/学习交流/校园互助），
-   横向可滚动，不做「关注」这种没有后端的假维度。 */
-.forum-navigation { position:sticky; top:0; z-index:120; background:#fff; }
-.forum-home { background:#fff; min-height:75vh; padding-bottom:calc(100px + env(safe-area-inset-bottom)); }
+/* 首页：对称顶栏 + 横向可滚板块栏（右侧柔和渐变遮罩）+ 极简公告细条 + 帖子流。 */
+.forum-navigation { position: sticky; top: 0; z-index: 120; background: #fff; }
+.forum-home { background: #fff; min-height: 75vh; padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 
-.timeline-tabs { display:flex; height:53px; border-bottom:1px solid #eff3f4; white-space:nowrap; }
-.timeline-tab { flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; height:53px; margin:0; padding:0 14px; background:transparent; color:#536471; font-size:15px; font-weight:500; border-radius:0; }
-.timeline-tab text { line-height:20px; }
-.timeline-tab-underline { width:0; height:4px; margin-top:1px; border-radius:2px; background:transparent; }
-.timeline-tab--active { color:#0f1419; font-weight:700; }
-.timeline-tab--active .timeline-tab-underline { width:100%; background:#0f1419; }
+.timeline-tabs-wrap { position: relative; border-bottom: 1px solid #eff3f4; }
+.timeline-tabs { display: flex; height: 46px; white-space: nowrap; }
+.timeline-tabs-fade {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), #ffffff);
+}
+.timeline-tab {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  width: auto;
+  height: 46px;
+  margin: 0;
+  padding: 0 14px;
+  background: transparent;
+  color: #536471;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 0;
+}
+.timeline-tab text { line-height: 20px; }
+.timeline-tab-underline {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: transparent;
+}
+.timeline-tab--active { color: #0f1419; font-weight: 700; }
+.timeline-tab--active .timeline-tab-underline { background: #0f1419; }
 
-.feed-tools { height:34px; display:flex; justify-content:space-between; align-items:center; padding:0 16px; border-bottom:1px solid #eff3f4; }
-.feed-tools button { display:flex; align-items:center; gap:5px; background:transparent; color:#536471; font-size:12px; padding:0; margin:0; }
-.feed-tools image { width:15px; height:15px; }
+.feed-announcement {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 16px 2px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #f7f9f9;
+}
+.feed-announcement:active { background: #eff3f4; }
+.feed-announcement-dot { width: 6px; height: 6px; border-radius: 50%; background: #0f1419; flex: none; }
+.feed-announcement-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #536471;
+  font-size: 12px;
+  line-height: 18px;
+}
 
-.forum-feed-item { border-bottom:1px solid #eff3f4; }
-.forum-feed-end { padding:24px 16px; text-align:center; font-size:13px; color:#536471; }
+.forum-feed-item { border-bottom: 1px solid #eff3f4; }
+.forum-feed-end { padding: 24px 16px; text-align: center; font-size: 13px; color: #536471; }
+.feed-page-retry { width: fit-content; margin: 0 auto; padding: 4px 12px; color: #0f1419; background: #f7f9f9; font-size: 13px; line-height: 28px; }
 
-.feed-state { padding:40px 32px; max-width:400px; margin:auto; color:#536471; font-size:15px; line-height:1.5; }
-.feed-state-title { display:block; color:#0f1419; font-size:20px; font-weight:700; margin-bottom:8px; }
-.feed-state button { width:max-content; margin:24px 0 0 !important; padding:0 20px; height:36px; background:#0f1419; color:#fff; border-radius:18px; font-size:15px; font-weight:700; line-height:36px; }
-
-.timeline-tab { min-width:0; width:auto; }
-.feed-tools button { min-width:0; width:auto; font-weight:400; }
-.feed-state button { min-width:0; }
-
-/* 公告入口挂在页头右侧插槽（与私信页下拉同位）。 */
-.feed-info { display:flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; margin:0; background:transparent; border-radius:50%; }
-.feed-info image { width:20px; height:20px; }
+.feed-state { padding: 48px 32px; max-width: 400px; margin: auto; color: #536471; font-size: 15px; line-height: 1.5; }
+.feed-state-title { display: block; color: #0f1419; font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.feed-state button {
+  width: max-content;
+  min-width: 0;
+  margin: 24px 0 0 !important;
+  padding: 0 22px;
+  height: 38px;
+  background: #0f1419;
+  color: #fff;
+  border-radius: 19px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 38px;
+}

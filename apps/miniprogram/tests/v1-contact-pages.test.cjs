@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict');const {loadPage}=require('./page-harness.cjs');
-function runtime(){const saved=new Map(),calls={routes:[],toasts:[]};const wx={getStorageSync:k=>saved.get(k),setStorageSync:(k,v)=>saved.set(k,v),showToast:o=>calls.toasts.push(o.title),navigateTo:o=>calls.routes.push(o.url),stopPullDownRefresh(){}};return{saved,calls,wx};}
+function runtime(){const saved=new Map([['xinkelink.session.v1', true]]),calls={routes:[],toasts:[]};const wx={getStorageSync:k=>saved.get(k),setStorageSync:(k,v)=>saved.set(k,v),showToast:o=>calls.toasts.push(o.title),navigateTo:o=>calls.routes.push(o.url),stopPullDownRefresh(){}};return{saved,calls,wx};}
 test('notifications are readable and local comment activity follows creation and deletion without self-unread',()=>{
  const r=runtime(),n=require('../.test-dist/features/contact/notifications.js'),f=require('../.test-dist/features/forum/repository.js');
  const before=n.readNotifications(r.wx);assert.ok(before.some(x=>x.type==='comment'));assert.ok(before.some(x=>x.type==='reaction'));

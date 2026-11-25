@@ -67,8 +67,6 @@ apps/miniprogram/miniprogram/
   pages/market/index.ts
   pages/market/index.wxml
   pages/market/index.wxss
-  assets/icons/ref-*.png（33 个新增资源）
-apps/miniprogram/scripts/generate-reference-icons.cjs
 apps/miniprogram/tests/reference-home.test.cjs
 apps/miniprogram/tests/home-presentation.test.cjs
 docs/ui/2026-11-05-reference-home.md

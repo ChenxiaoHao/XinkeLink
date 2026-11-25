@@ -1,4 +1,5 @@
 {
+  "navigationBarTextStyle": "white",
   "usingComponents": {
     "forum-post-card": "/components/forum-post-card/index"
   }

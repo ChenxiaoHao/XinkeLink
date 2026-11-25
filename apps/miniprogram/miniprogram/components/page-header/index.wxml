@@ -1,1 +1,22 @@
-<view class="x-header" style="padding-top:{{statusHeight}}px"><view class="x-toolbar {{left ? 'x-toolbar--left' : ''}}" style="height:{{navigationHeight}}px"><button wx:if="{{!left}}" class="x-avatar-button" bindtap="openDrawer" aria-label="{{loggedIn ? '打开账号侧栏' : '点击登录'}}"><image wx:if="{{loggedIn && avatar}}" class="x-toolbar-avatar" src="{{avatar}}" mode="aspectFill" binderror="onAvatarError"/><view wx:elif="{{loggedIn}}" class="x-toolbar-avatar x-toolbar-letter">{{initial}}</view><view wx:else class="x-toolbar-avatar x-toolbar-guest"><image src="/assets/icons/x-user-round-ink.png"/></view></button><view wx:if="{{searchMode}}" class="x-header-search" style="right:{{rightSpace + 38}}px"><image src="/assets/icons/x-search-ink.png"/><input value="{{query}}" placeholder="搜索" confirm-type="search" bindinput="onInput" bindconfirm="onSubmit" bindfocus="onFocus"/></view><image wx:elif="{{home}}" class="x-wordmark" src="/assets/icons/x-logo-ink.png"/><view wx:else class="x-toolbar-heading"><text class="x-toolbar-title">{{title}}</text><text wx:if="{{badge}}" class="x-toolbar-badge">{{badge}}</text></view><button wx:if="{{action}}" class="x-toolbar-action" style="right:{{rightSpace}}px" bindtap="onAction" aria-label="{{action === 'settings' ? '设置' : action === 'plus' ? '新建对话' : action === 'history' ? '历史' : '更多操作'}}"><image src="/assets/icons/x-{{action}}-ink.png"/></button><view class="x-toolbar-slot" style="right:{{rightSpace}}px"><slot name="right"/></view></view></view>
+<view class="x-header" style="padding-top:{{statusHeight}}px">
+  <view class="x-toolbar {{left ? 'x-toolbar--left' : ''}}" style="height:{{navigationHeight}}px">
+    <button class="x-avatar-button" bindtap="openDrawer" aria-label="{{loggedIn ? '打开账号侧栏' : '点击登录'}}">
+      <image wx:if="{{loggedIn && avatar}}" class="x-toolbar-avatar" src="{{avatar}}" data-source="{{avatar}}" mode="aspectFill" binderror="onAvatarError" />
+      <view wx:elif="{{loggedIn}}" class="x-toolbar-avatar x-toolbar-letter">{{initial}}</view>
+      <view wx:else class="x-toolbar-avatar x-toolbar-guest"><image class="x-toolbar-guest-icon" src="/assets/icons/x-user-round-ink.png" /></view>
+    </button>
+    <view wx:if="{{searchMode}}" class="x-header-search" style="right:{{rightSpace + 10}}px">
+      <image class="x-header-search-icon" src="/assets/icons/x-search-muted.png" />
+      <input class="x-header-search-input" value="{{query}}" placeholder="搜索校园动态" placeholder-style="color:#536471" confirm-type="search" bindinput="onInput" bindconfirm="onSubmit" bindfocus="onFocus" />
+    </view>
+    <image wx:elif="{{home}}" class="x-wordmark" src="/assets/icons/x-logo-ink.png" />
+    <view wx:else class="x-toolbar-heading {{left ? 'x-toolbar-heading--left' : ''}}" style="{{left ? 'padding-right:' + (rightSpace + 80) + 'px' : ''}}">
+      <text class="x-toolbar-title">{{title}}</text>
+      <text wx:if="{{badge}}" class="x-toolbar-badge">{{badge}}</text>
+    </view>
+    <button wx:if="{{action}}" class="x-toolbar-action" style="right:{{rightSpace + 6}}px" bindtap="onAction" aria-label="{{action === 'settings' ? '设置' : action === 'plus' ? '新建对话' : action === 'history' ? '历史' : '更多操作'}}">
+      <image class="x-toolbar-action-icon" src="/assets/icons/x-{{action}}-ink.png" />
+    </button>
+    <view class="x-toolbar-slot" style="right:{{rightSpace + 6}}px"><slot name="right" /></view>
+  </view>
+</view>

@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import type { Wire } from '../services/admin-adapters'
 import { adminHttp, queryString, shanghaiBoundary } from '../services/admin-http'
 export type AuditOutcome = 'success' | 'business_rejected' | 'execution_error'
-export type AuditModule = 'posts' | 'comments' | 'reports' | 'users' | 'announcements' | 'notifications' | 'settings'
+export type AuditModule = 'posts' | 'comments' | 'reports' | 'users' | 'announcements' | 'notifications' | 'settings' | 'lucky_bags' | 'ai_knowledge'
 
 export interface AuditEventInput {
   module: AuditModule

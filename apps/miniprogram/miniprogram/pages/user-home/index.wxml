@@ -13,19 +13,20 @@
 
   <block wx:elif="{{profile}}">
     <view class="user-identity">
-      <image class="user-avatar" src="{{profile.avatar}}" data-kind="profile" data-source="{{profile.avatar}}" binderror="onRemoteAvatarError" mode="aspectFill" />
+      <view class="user-avatar-row">
+        <image class="user-avatar" src="{{profile.avatar}}" data-kind="profile" data-source="{{profile.avatar}}" binderror="onRemoteAvatarError" mode="aspectFill" />
+        <view class="user-actions">
+          <button class="user-action" open-type="share">分享</button>
+          <button wx:if="{{profile.isSelf && loggedIn}}" class="user-action" bindtap="onEditTap">编辑资料</button>
+          <button wx:if="{{!profile.isSelf}}" class="user-action user-action--primary" bindtap="onMessageTap">发私信</button>
+        </view>
+      </view>
       <text class="user-name">{{profile.nickname}}</text>
       <text wx:if="{{profile.major || profile.className || profile.year}}" class="user-meta">{{profile.major}}{{profile.className ? (profile.major ? ' · ' : '') + profile.className : ''}}{{profile.year ? ((profile.major || profile.className) ? ' · ' : '') + profile.year + '级' : ''}}</text>
-      <text class="user-bio">{{profile.bio || '还没有填写个人简介'}}</text>
+      <text wx:if="{{profile.bio}}" class="user-bio">{{profile.bio}}</text>
       <view class="user-stats">
         <view class="user-stat"><text class="user-stat-number">{{profile.posts.length}}</text><text class="user-stat-unit">条公开帖子</text></view>
         <view class="user-stat"><text class="user-stat-number">{{profile.likeCount}}</text><text class="user-stat-unit">次获赞</text></view>
-      </view>
-      <view class="user-actions">
-        <button class="user-action" open-type="share">分享个人资料</button>
-        <!-- 访客看自己的公开主页没有「编辑」入口：未登录没有可编辑的身份。 -->
-        <button wx:if="{{profile.isSelf && loggedIn}}" class="user-action" bindtap="onEditTap">编辑个人资料</button>
-        <button wx:if="{{!profile.isSelf}}" class="user-action" bindtap="onMessageTap">私信</button>
       </view>
     </view>
 

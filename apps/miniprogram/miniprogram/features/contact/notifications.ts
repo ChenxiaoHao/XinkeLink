@@ -3,7 +3,7 @@ import { readForum } from '../forum/repository'
 import { commentAuthor, visibleComments } from '../forum/comments'
 import { relativeNoticeLabel } from '../../utils/presentation'
 export type NoticeType = 'comment' | 'reaction' | 'announcement'
-export interface Notice { id: string; type: NoticeType; actorName: string; avatar: string; summary: string; quote: string; image: string; createdAt: number; timeLabel: string; unread: boolean; targetKind: 'post' | 'announcement'; targetId: string; detail: string; local: boolean }
+export interface Notice { id: string; type: NoticeType; eventKind?:string; actorName: string; avatar: string; summary: string; quote: string; image: string; createdAt: number; timeLabel: string; unread: boolean; targetKind: 'post' | 'announcement'; targetId: string; detail: string; local: boolean }
 export const NOTICE_KEY = 'xinkelink.notifications.v1'
 // 种子通知以「打开时刻」为基准往前推，演示时才能看到「12分钟 / 1小时 / 昨天」这样的相对时间。
 const seedBase = () => Date.now()

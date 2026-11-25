@@ -3,7 +3,8 @@ param(
   [ValidateRange(1, 65535)][int]$Port = 18081,
   [ValidatePattern('^[A-Za-z0-9_-]+(,[A-Za-z0-9_-]+)*$')][string]$Profiles = 'db,dev,auth',
   [string]$JavaHome = '',
-  [switch]$Build
+  [switch]$Build,
+  [switch]$RequireAi
 )
 
 $ErrorActionPreference = 'Stop'
@@ -48,14 +49,47 @@ $javaVersion = (& $java -version 2>&1 | Out-String).Trim()
 if ($LASTEXITCODE -ne 0 -or $javaVersion -notmatch '(openjdk|java) version "21[.\"]') { throw '开发后端必须使用 JDK 21。' }
 
 $processEnvironment = @{ JAVA_HOME = $JavaHome; PATH = "$(Join-Path $JavaHome 'bin');$env:PATH" }
+$aiRequired = @('XINKELINK_AI_CHAT_URL', 'XINKELINK_AI_CHAT_KEY', 'XINKELINK_AI_CHAT_MODEL',
+  'XINKELINK_AI_EMBEDDING_URL', 'XINKELINK_AI_EMBEDDING_KEY', 'XINKELINK_AI_EMBEDDING_MODEL',
+  'XINKELINK_AI_RERANK_URL', 'XINKELINK_AI_RERANK_KEY', 'XINKELINK_AI_RERANK_MODEL', 'XINKELINK_AI_CHROMA_URL')
+$aiNames = $aiRequired + @('XINKELINK_AI_CHAT_ENABLE_THINKING', 'XINKELINK_AI_ALLOWED_HOSTS', 'XINKELINK_AI_SETTINGS_KEY_BASE64',
+  'XINKELINK_AI_RERANK_PROTOCOL', 'XINKELINK_AI_CHROMA_TENANT', 'XINKELINK_AI_CHROMA_DATABASE',
+  'XINKELINK_AI_INPUT_CHARS', 'XINKELINK_AI_CONTEXT_CHARS', 'XINKELINK_AI_OUTPUT_CHARS', 'XINKELINK_AI_OUTPUT_TOKENS',
+  'XINKELINK_AI_TIMEOUT_SECONDS', 'XINKELINK_AI_REQUESTS_PER_MINUTE', 'XINKELINK_AI_GLOBAL_CONCURRENCY',
+  'XINKELINK_AI_KNOWLEDGE_RERANK_MIN_SCORE')
+$aiFile = Join-Path $workspace 'private\link-ai-environment.json'
+if (Test-Path -LiteralPath $aiFile -PathType Leaf) {
+  try { $aiLocal = Get-Content -LiteralPath $aiFile -Raw | ConvertFrom-Json -AsHashtable }
+  catch { throw '无法读取本地 Link AI 配置文件。' }
+  if ($aiLocal -isnot [System.Collections.IDictionary]) { throw '本地 Link AI 配置必须是由环境变量名和字符串组成的 JSON 对象。' }
+  foreach ($name in $aiLocal.Keys) {
+    if ($name -cnotin $aiNames -or $aiLocal[$name] -isnot [string]) { throw '本地 Link AI 配置含有未知配置项或非字符串值。' }
+    if (-not [string]::IsNullOrWhiteSpace($aiLocal[$name])) { $processEnvironment[$name] = $aiLocal[$name].Trim() }
+  }
+}
 # 桌面应用可能早于用户环境变量启动；读取新配置后只传给后端子进程。
-foreach ($name in @('XINKELINK_WECHAT_APP_ID', 'XINKELINK_WECHAT_APP_SECRET', 'XINKELINK_ADMIN_ALLOWED_ORIGINS',
+foreach ($name in (@('XINKELINK_WECHAT_APP_ID', 'XINKELINK_WECHAT_APP_SECRET', 'XINKELINK_ADMIN_ALLOWED_ORIGINS',
     'XINKELINK_IMAGE_STORAGE', 'XINKELINK_OSS_BUCKET', 'XINKELINK_OSS_REGION',
-    'XINKELINK_OSS_ENDPOINT', 'XINKELINK_OSS_ACCESS_KEY_ID', 'XINKELINK_OSS_ACCESS_KEY_SECRET')) {
+    'XINKELINK_OSS_ENDPOINT', 'XINKELINK_OSS_ACCESS_KEY_ID', 'XINKELINK_OSS_ACCESS_KEY_SECRET') + $aiNames)) {
   $value = [Environment]::GetEnvironmentVariable($name, 'Process')
   if ([string]::IsNullOrWhiteSpace($value)) { $value = [Environment]::GetEnvironmentVariable($name, 'User') }
   if ([string]::IsNullOrWhiteSpace($value)) { $value = [Environment]::GetEnvironmentVariable($name, 'Machine') }
   if (-not [string]::IsNullOrWhiteSpace($value)) { $processEnvironment[$name] = $value.Trim() }
+}
+if ($RequireAi -and $Profiles.Split(',') -notcontains 'auth') { throw 'Link AI 启动检查需要 auth profile。' }
+if ($Profiles.Split(',') -contains 'auth') {
+  $missing = @($aiRequired | Where-Object { -not $processEnvironment.ContainsKey($_) })
+  if ($missing.Count -gt 0) {
+    $message = 'Link AI 缺少配置项：' + ($missing -join ', ')
+    if ($RequireAi) { throw $message }
+    Write-Warning $message
+  } elseif ($RequireAi) {
+    try {
+      $heartbeat = Invoke-RestMethod -Uri ($processEnvironment.XINKELINK_AI_CHROMA_URL.TrimEnd('/') + '/api/v2/heartbeat') -TimeoutSec 5 -MaximumRedirection 0
+      if (-not $heartbeat.PSObject.Properties['nanosecond heartbeat']) { throw 'Invalid Chroma heartbeat.' }
+    } catch { throw 'Link AI 的 Chroma 服务未通过心跳检查。' }
+    Write-Output 'Link AI 模型配置项齐全，Chroma 心跳正常。'
+  }
 }
 Write-Output "微信配置存在：AppID=$($processEnvironment.ContainsKey('XINKELINK_WECHAT_APP_ID'))，AppSecret=$($processEnvironment.ContainsKey('XINKELINK_WECHAT_APP_SECRET'))。"
 # 本地后台使用 HTTPS 安全 Cookie；自定义来源配置优先，不放宽服务端来源校验。
@@ -76,6 +110,7 @@ if ($Build -or -not (Test-Path -LiteralPath $jar -PathType Leaf)) {
   $buildEnvironment.XINKELINK_IMAGE_STORAGE = 'local'
   foreach ($name in @('XINKELINK_OSS_BUCKET', 'XINKELINK_OSS_REGION', 'XINKELINK_OSS_ENDPOINT',
       'XINKELINK_OSS_ACCESS_KEY_ID', 'XINKELINK_OSS_ACCESS_KEY_SECRET')) { $buildEnvironment[$name] = '' }
+  foreach ($name in $aiNames) { $buildEnvironment[$name] = '' }
   $buildProcess = Start-Process -FilePath $env:ComSpec -WorkingDirectory $serverDirectory -WindowStyle Hidden -Wait -PassThru `
     -ArgumentList @('/d', '/s', '/c', "`"`"$maven`" -B -Dxinkelink.build.directory=target/backend-dev clean package`"") -Environment $buildEnvironment `
     -RedirectStandardOutput (Join-Path $workspace 'server-build.stdout.log') -RedirectStandardError (Join-Path $workspace 'server-build.stderr.log')

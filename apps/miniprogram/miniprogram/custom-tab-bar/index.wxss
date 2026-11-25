@@ -1,12 +1,70 @@
- .tab-bar { position:fixed; z-index:90; bottom:0; left:0; right:0; display:flex; padding:0 4px env(safe-area-inset-bottom); height:53px; background:#fff; border-top:1px solid #eff3f4; box-sizing:content-box; }
-.tab-item { position:relative; display:flex; align-items:center; justify-content:center; flex:1; height:53px; padding:0; margin:0; background:transparent; border-radius:0; line-height:1; }
-.tab-icon { width:26px; height:26px; }
-/* 设计稿里当前所在的那一格，图标上方有一颗蓝色小点。 */
-.tab-dot { position:absolute; top:6px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:50%; background:#0f1419; }
-.tab-item--pressed { background:#eff3f4; }
-.tab-unread-badge { position:absolute; top:5px; left:52%; min-width:15px; padding:2px 4px; border:1px solid #fff; border-radius:20px; background:#0f1419; color:#fff; font-size:10px; text-align:center; }
-.publish-button { position:fixed; z-index:91; right:20px; bottom:calc(73px + env(safe-area-inset-bottom)); width:56px; height:56px; padding:0; display:flex; align-items:center; justify-content:center; background:#0f1419; border-radius:50%; box-shadow:0 3px 12px #0003; }
-.publish-icon { width:28px; height:28px; }
-.publish-button--pressed { background:#1a8cd8; transform:scale(.96); }
-
-.publish-button { min-width:56px; max-width:56px; min-height:56px; max-height:56px; box-sizing:border-box; }.tab-item { min-width:0; width:0; box-sizing:border-box; }
+.tab-bar {
+  position: fixed;
+  z-index: 90;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  padding: 0 4px env(safe-area-inset-bottom);
+  height: 52px;
+  background: #fff;
+  border-top: 1px solid #eff3f4;
+  box-sizing: content-box;
+}
+.tab-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  width: 0;
+  height: 52px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border-radius: 0;
+  line-height: 1;
+  box-sizing: border-box;
+}
+.tab-icon { width: 25px; height: 25px; }
+.tab-item--pressed { background: #f7f9f9; }
+.tab-unread-badge {
+  position: absolute;
+  top: 6px;
+  left: 53%;
+  min-width: 16px;
+  padding: 1px 5px;
+  border: 1.5px solid #fff;
+  border-radius: 999px;
+  background: #0f1419;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.publish-button {
+  position: fixed;
+  z-index: 91;
+  right: 18px;
+  bottom: calc(68px + env(safe-area-inset-bottom));
+  width: 52px;
+  min-width: 52px;
+  max-width: 52px;
+  height: 52px;
+  min-height: 52px;
+  max-height: 52px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f1419;
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(15, 20, 25, 0.22);
+  box-sizing: border-box;
+  transition: transform 0.14s ease;
+}
+.publish-icon { width: 24px; height: 24px; }
+.publish-button--pressed { background: #272c30; transform: scale(0.94); }

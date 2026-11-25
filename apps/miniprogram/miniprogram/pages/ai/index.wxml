@@ -1,41 +1,127 @@
-<app-shell id="app-shell">
-<view class="ai-header"><page-header left title="Link AI" badge="免费" action="plus" bind:action="onNewChat" /></view>
-<view class="ai-page">
-  <view class="ai-thread">
-    <!-- 空会话：居中欢迎区（对齐 X Grok 的空态），开聊后恢复消息流。 -->
-    <view wx:if="{{messages.length === 1}}" class="ai-hero">
-      <image class="ai-hero-icon" src="/assets/icons/x-sparkle-ink.png" mode="aspectFit" />
-      <text class="ai-hero-title">你好，我是 Link AI</text>
-      <text class="ai-hero-sub">帮你润色文案、出主意、答疑，完全免费。</text>
+<app-shell id="app-shell" bind:drawerchange="onDrawerChange">
+  <view class="ai-header">
+    <page-header left title="Link AI">
+      <view slot="right" class="ai-head-actions">
+        <button wx:if="{{!guest}}" class="ai-head-btn" bindtap="onHistory" aria-label="历史会话">
+          <image src="/assets/icons/x-history-ink.png" mode="aspectFit" />
+        </button>
+        <button wx:if="{{!guest}}" class="ai-head-btn" bindtap="onNewChat" aria-label="开启新对话">
+          <image src="/assets/icons/x-plus-ink.png" mode="aspectFit" />
+        </button>
+      </view>
+    </page-header>
+  </view>
+
+  <view class="ai-page">
+    <view class="ai-test-notice">Link AI 处于测试阶段。知识库含虚构样例，回答仅用于测试，请以学校正式通知为准。</view>
+    <view wx:if="{{demo && !guest}}" class="ai-demo-pill">演示模式 · 非真实模型与学校规定</view>
+
+    <!-- 访客居中引导态 -->
+    <view wx:if="{{guest}}" class="ai-guest">
+      <view class="ai-guest-icon"><image src="/assets/icons/x-sparkle-ink.png" mode="aspectFit" /></view>
+      <text class="ai-guest-title">登录后使用 Link AI</text>
+      <text class="ai-guest-copy">登录后可体验知识库问答、检索校内公开帖子，并保存个人历史会话。</text>
+      <button class="ai-guest-btn" bindtap="onLogin">微信登录</button>
     </view>
-    <block wx:if="{{messages.length > 1}}">
-      <view wx:for="{{messages}}" wx:key="id" class="ai-row ai-row--{{item.role}}">
-        <view wx:if="{{item.role === 'ai'}}" class="ai-avatar"><image src="/assets/icons/x-sparkle-white.png" mode="aspectFit" /></view>
-        <view class="ai-bubble ai-bubble--{{item.role}}">
-          <text class="ai-text" user-select>{{item.text}}</text>
-          <view wx:if="{{item.actions}}" class="ai-actions">
-            <button class="ai-action" data-text="{{item.text}}" bindtap="onCopy">复制</button>
-            <button class="ai-action" data-text="{{item.text}}" bindtap="onPostTap">直接发帖</button>
-          </view>
+
+    <block wx:else>
+      <view wx:if="{{loading}}" class="ai-thinking">
+        <view class="ai-thinking-dot"><image src="/assets/icons/x-sparkle-ink.png" mode="aspectFit" /></view>
+        <text>正在读取会话…</text>
+      </view>
+
+      <view class="ai-thread">
+        <!-- 空会话 Grok 欢迎区 -->
+        <view wx:if="{{!messages.length && !pendingQuestion && !loading}}" class="ai-hero">
+          <view class="ai-hero-badge"><image class="ai-hero-icon" src="/assets/icons/x-sparkle-white.png" mode="aspectFit" /></view>
+          <text class="ai-hero-title">有什么可以帮你？</text>
+          <text class="ai-hero-sub">试用知识库问答，或检索校内公开帖子</text>
         </view>
+
+        <!-- 多轮对话：Grok 浅灰用户气泡 + 无外框通栏 AI 回答 + 来源胶囊 + 引用帖卡 -->
+        <block wx:for="{{messages}}" wx:key="id" wx:for-item="message">
+          <view class="ai-row ai-row--me">
+            <view class="ai-bubble ai-bubble--me"><text class="ai-text" user-select>{{message.question}}</text></view>
+          </view>
+          <view class="ai-answer-block">
+            <view class="ai-answer-head">
+              <view class="ai-avatar"><image src="/assets/icons/x-sparkle-white.png" mode="aspectFit" /></view>
+              <text class="ai-answer-name">Link AI</text>
+            </view>
+            <text class="ai-text ai-answer-text" user-select>{{message.answer}}</text>
+            <scroll-view wx:if="{{message.sources.length}}" class="ai-sources-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
+              <button wx:for="{{message.sources}}" wx:key="index" class="ai-source-pill" data-url="{{item.url}}" disabled="{{item.url === 'urn:xinkelink:demo-knowledge'}}" bindtap="onSource">
+                <image class="ai-source-icon" src="/assets/icons/x-file-ink.png" mode="aspectFit" />
+                <text class="ai-source-title">{{item.title}}</text>
+                <text class="ai-source-meta">{{item.section ? ' · ' + item.section : ''}}{{item.page ? ' P' + item.page : ''}}</text>
+              </button>
+            </scroll-view>
+            <view wx:if="{{message.posts.length}}" class="ai-quote-list">
+              <view wx:for="{{message.posts}}" wx:key="id" class="ai-quote-card">
+                <forum-post-card post="{{item}}" bind:open="onOpenPost" />
+              </view>
+            </view>
+          </view>
+        </block>
+
+        <view wx:if="{{pendingQuestion}}" class="ai-row ai-row--me">
+          <view class="ai-bubble ai-bubble--me"><text class="ai-text">{{pendingQuestion}}</text></view>
+        </view>
+
+        <view wx:if="{{busy}}" class="ai-thinking">
+          <view class="ai-thinking-dot"><image src="/assets/icons/x-sparkle-ink.png" mode="aspectFit" /></view>
+          <text>正在检索资料…</text>
+        </view>
+
+        <view wx:if="{{error}}" class="ai-error-card">
+          <view class="ai-error-copy">
+            <text class="ai-error-title">回答暂时生成失败</text>
+            <text class="ai-error-desc">{{error}}</text>
+          </view>
+          <button class="ai-error-retry" disabled="{{busy}}" bindtap="onAiRetry">重试</button>
+        </view>
+
+        <view id="ai-bottom" class="ai-bottom"></view>
       </view>
     </block>
-    <view id="ai-bottom" class="ai-bottom"></view>
   </view>
-</view>
 </app-shell>
-<!-- 底部输入区留在 app-shell 外：外壳的 transform 会吃掉 position:fixed 的定位基准。 -->
-<view class="ai-compose" style="bottom:{{keyboardHeight ? keyboardHeight + 'px' : 'calc(53px + env(safe-area-inset-bottom))'}};">
-  <!-- 推荐提问贴着输入框：设计稿里它固定在输入框正上方，不随会话滚走。 -->
-  <view class="ai-suggest">
-    <text class="ai-suggest-title">试试这样问</text>
-    <view class="ai-suggest-list">
-      <button wx:for="{{suggestions}}" wx:key="*this" class="ai-suggest-chip" data-prompt="{{item}}" bindtap="onSuggestion">{{item}}</button>
+
+<!-- 历史会话半屏抽屉 -->
+<view wx:if="{{historyVisible}}" class="ai-sheet-mask" catchtap="onHistory" catchtouchmove="true">
+  <view class="ai-sheet" catchtap="true">
+    <view class="ai-sheet-handle"></view>
+    <view class="ai-sheet-head">
+      <text class="ai-sheet-title">历史会话</text>
+      <button class="ai-sheet-new" bindtap="onNewChat">+ 新对话</button>
     </view>
-  </view>
-  <view class="ai-input-row">
-    <textarea class="ai-input" value="{{prompt}}" maxlength="2000" placeholder="问问 Link AI…" auto-height adjust-position="{{false}}" cursor-spacing="16" bindinput="onInput" bindkeyboardheightchange="onKeyboardHeightChange" />
-    <button class="ai-send {{prompt ? '' : 'ai-send--idle'}}" bindtap="onSend" aria-label="发送"><image src="/assets/icons/arrow-up-white.png" mode="aspectFit" /></button>
+    <scroll-view class="ai-sheet-list" scroll-y>
+      <view wx:if="{{!sessions.length && !loading}}" class="ai-sheet-empty">暂无历史会话</view>
+      <view wx:for="{{sessions}}" wx:key="id" class="ai-session-row {{sessionId === item.id ? 'ai-session-row--active' : ''}}">
+        <button class="ai-session-open" data-id="{{item.id}}" bindtap="onOpenSession">
+          <view wx:if="{{sessionId === item.id}}" class="ai-session-dot"></view>
+          <text class="ai-session-title">{{item.title}}</text>
+        </button>
+        <button class="ai-session-del" data-id="{{item.id}}" catchtap="onDeleteSession">删除</button>
+      </view>
+    </scroll-view>
   </view>
 </view>
+
+<!-- Grok 悬浮胶囊输入框（空态展示 2 列推荐卡片，开聊后自动隐藏） -->
+<view wx:if="{{!guest && !drawerVisible}}" class="ai-compose" style="bottom:{{keyboardHeight ? keyboardHeight + 'px' : 'calc(52px + env(safe-area-inset-bottom))'}};">
+  <view wx:if="{{!messages.length && !pendingQuestion}}" class="ai-suggest-grid">
+    <button wx:for="{{suggestions}}" wx:key="title" class="ai-suggest-card" data-prompt="{{item.prompt}}" bindtap="onSuggestion">
+      <text class="ai-suggest-card-title">{{item.title}}</text>
+      <text class="ai-suggest-card-sub">{{item.sub}}</text>
+    </button>
+  </view>
+  <view class="ai-input-pill">
+    <textarea class="ai-input" value="{{prompt}}" maxlength="1000" placeholder="问问 Link AI…" placeholder-style="color:#536471" auto-height adjust-position="{{false}}" cursor-spacing="16" bindinput="onInput" bindkeyboardheightchange="onKeyboardHeightChange" />
+    <button class="ai-send {{prompt ? '' : 'ai-send--idle'}}" disabled="{{busy || loading}}" bindtap="onSend" aria-label="发送">
+      <image src="/assets/icons/arrow-up-white.png" mode="aspectFit" />
+    </button>
+  </view>
+</view>
+
 <profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

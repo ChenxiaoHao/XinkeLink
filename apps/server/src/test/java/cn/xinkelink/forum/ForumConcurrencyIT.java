@@ -167,7 +167,8 @@ class ForumConcurrencyIT {
         });
 
         assertTrue(one >= 4, "必须拦截到真实查询，禁止零查询假通过");
-        assertTrue(twenty <= 10, "列表查询数必须保持有界，实际为 " + twenty);
+        // 公共计数与viewer状态拆成两个批查，较旧预算增加一条；仍必须与页大小无关。
+        assertTrue(twenty <= 11, "列表查询数必须保持有界（公共计数/个人状态分别批查），实际为 " + twenty);
         assertEquals(one, twenty, "页大小增加不能产生逐条加载查询");
     }
 

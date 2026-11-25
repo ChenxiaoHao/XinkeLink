@@ -85,12 +85,13 @@ test('user profiles link content, filters, and reasoned restrictions with a rele
   await page.getByRole('option', { name: '临时封禁' }).click()
   await expect(page.locator('.user-table .el-table__body-wrapper tbody tr')).toHaveCount(1)
   await expect(page.locator('.user-table .el-table__body-wrapper tbody tr').first()).toContainText('林知夏')
-  await page.setViewportSize({ width: 1366, height: 600 })
+  await page.setViewportSize({ width: 1366, height: 460 })
   const main = page.locator('.main-scroll')
   const topbarY = (await page.locator('.admin-topbar').boundingBox())?.y
   const sidebarY = (await page.locator('.admin-sidebar').boundingBox())?.y
   expect(await main.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
   await main.evaluate(element => { element.scrollTop = 400 })
+  expect(await main.evaluate(element => element.scrollTop)).toBeGreaterThan(0)
   expect(await page.evaluate(() => document.documentElement.scrollTop)).toBe(0)
   expect((await page.locator('.admin-topbar').boundingBox())?.y).toBe(topbarY)
   expect((await page.locator('.admin-sidebar').boundingBox())?.y).toBe(sidebarY)

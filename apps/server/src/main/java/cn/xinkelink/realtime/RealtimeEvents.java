@@ -3,9 +3,6 @@ package cn.xinkelink.realtime;
 import cn.xinkelink.auth.AuthPrincipal;
 import cn.xinkelink.auth.AuthService;
 import cn.xinkelink.auth.token.JwtTokenService;
-import cn.xinkelink.beta.BetaService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.EventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -36,9 +33,6 @@ public class RealtimeEvents extends TextWebSocketHandler {
     private final AuthService auth;
     private final JwtTokenService jwt;
     private final JsonMapper json;
-    private BetaService beta;
-    @Autowired public void betaAccess(BetaService beta){this.beta=beta;}
-    @EventListener public void betaPhaseChanged(BetaService.PhaseChanged event){checkSessions();}
     public RealtimeEvents(AuthService auth,JwtTokenService jwt,JsonMapper json){this.auth=auth;this.jwt=jwt;this.json=json;}
 
     public void afterCommit(Runnable callback){
@@ -80,7 +74,6 @@ public class RealtimeEvents extends TextWebSocketHandler {
     private boolean valid(Client client){
         try{AuthPrincipal actor=auth.authenticate(jwt.decode(client.bearer()));
             if(!"user".equals(actor.actorType())||actor.subjectId()!=client.userId())throw new IllegalStateException();
-            if(beta!=null)beta.requireAccess(actor);
             return client.socket().isOpen();
         }catch(RuntimeException ignored){close(client,CloseStatus.POLICY_VIOLATION);return false;}
     }

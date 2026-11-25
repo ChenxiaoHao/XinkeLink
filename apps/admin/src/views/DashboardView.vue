@@ -119,11 +119,11 @@ function open(path: string) { void router.push(path) }
 </template>
 
 <style scoped>
-.metric-value.is-danger-text { color: #b42318; }
-.todo-count { padding: 3px 6px; color: #b42318; background: #f5f5f5; border-radius: 8px; font-size: 13px; font-weight: 500; }
-.activity-empty { padding: 22px !important; color: #666666 !important; text-align: center; }
+.metric-value.is-danger-text { color: var(--xlk-accent-rose); }
+.todo-count { padding: 3px 8px; color: var(--xlk-accent-rose); background: var(--xlk-accent-rose-soft); border-radius: 999px; font-size: 12px; font-weight: 600; }
+.activity-empty { padding: 26px !important; color: var(--xlk-color-muted) !important; text-align: center; }
 @media (max-width: 1200px) {
-  .activity-panel .panel-header { align-items: flex-start; flex-direction: column; padding: 12px 15px; }
+  .activity-panel .panel-header { align-items: flex-start; flex-direction: column; padding: 14px 18px; }
   .activity-toolbar { width: 100%; overflow-x: auto; }
 }
 </style>

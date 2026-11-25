@@ -51,6 +51,6 @@ export function noticeView(dto: Json): Json {
   const reactions: Record<string, string> = { post_like: '赞了你的校园动态', comment_like: '赞了你的评论', post_favorite: '收藏了你的校园动态（历史记录）' }
   return { id: dto.id, type: dto.type, actorName: dto.eventKind === 'announcement' ? '信科 Link 公告' : dto.eventKind === 'system' ? '信科 Link 系统通知' : dto.actor?.displayName || actor?.nickname || '平台通知', avatar: media(actor?.avatar) || (dto.actor?.kind === 'user' ? DEFAULT_AVATAR : '/assets/icons/megaphone-primary.png'),
     summary: dto.target?.availability === 'unavailable' ? dto.title : reactions[dto.eventKind] || dto.title || dto.summary, quote: dto.quote || '', image: media(dto.image), createdAt: Date.parse(dto.createdAt), timeLabel: dateLabel(dto.createdAt),
-    unread: !dto.readAt, targetKind: dto.target?.kind || 'announcement', targetId: dto.target?.id || '', availability: dto.target?.availability,
+    eventKind:dto.eventKind, unread: !dto.readAt, targetKind: dto.target?.kind || 'announcement', targetId: dto.target?.id || '', availability: dto.target?.availability,
     detail: dto.content || dto.summary || '', local: false }
 }

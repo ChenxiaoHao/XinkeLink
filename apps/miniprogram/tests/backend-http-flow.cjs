@@ -9,7 +9,7 @@ const touch = (id, action) => ({ currentTarget: { dataset: { id, action } } });
 async function run() {
   const origin = process.env.XINKELINK_TEST_ORIGIN || 'http://127.0.0.1:18081';
   const alice = createHttpRuntime({ origin, code: 'day5-alice' }), bob = createHttpRuntime({ origin, code: 'day5-bob' });
-  const page = (name, runtime) => loadPage(`pages/${name}/index.js`, { ...runtime, fixture: false, betaPhase: 'open' });
+  const page = (name, runtime) => loadPage(`pages/${name}/index.js`, { ...runtime, fixture: false });
   const idFromRoute = runtime => new URL('http://test' + runtime.routes.at(-1)).searchParams.get('id');
   const tag = 'Day5小程序HTTP-' + Date.now();
   const fixture = { tag, origin, boundary: '真实HTTP/JWT/MySQL/Redis；wx.login使用测试源码适配器，未验收真实微信或真机' };

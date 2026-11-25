@@ -1,15 +1,18 @@
+import { getViewerRole } from '../features/profile/viewer'
+import { readSearchHistory } from '../features/search/history'
+import { readPostDraft, savePostDraft, clearPostDraft } from '../features/forum/drafts'
 // 必须排在其它导入之前：先确定是否处于本地演示模式，再决定页面走哪套实现。
 import './demo-mode'
-import { client, Json, query, requestId, Runtime } from './client'
-import { media, mergeMessages, postView, profileView } from './adapters'
+import { ApiError, client, Json, query, requestId, Runtime } from './client'
+import { media, mergeMessages, messageView, postView, profileView } from './adapters'
 import { BackendService } from './service'
 import { Realtime } from './realtime'
 import { LOCAL_STUDENT_ID_KEY } from './config'
-import { PageImageRenewal, loadAuthorizedLocalImage, needsPreviewRefresh } from './preview'
+import { PageImageRenewal, loadAuthorizedLocalImage, needsPreviewRefresh, sessionAvatar } from './preview'
+import { backendImageId } from './image-urls'
 import { chatTimeLabel } from '../utils/presentation'
 import { menuRightSpace } from '../utils/layout'
-import { betaAccess, betaTarget } from './beta'
-import { betaPage } from './beta-page'
+import { detailVisit } from '../features/statistics/views'
 type NativeRuntime = typeof wx
 
 /** Preserve the existing native view and pure UI handlers; replace every business operation.
@@ -17,9 +20,16 @@ type NativeRuntime = typeof wx
 export function registerPage(runtime: Runtime, nativePage: typeof Page, name: string): typeof Page {
   return ((fixture: Json) => {
     if (runtime.__fixtureMode === true) { nativePage(fixture); return }
-    const api = client(runtime), service = new BackendService(api), wx = runtime as NativeRuntime, gate = betaAccess(api)
+    const api = client(runtime), service = new BackendService(api), wx = runtime as NativeRuntime
     const toast = (error: unknown): void => { wx.showToast({ title: error instanceof Error ? error.message : '操作未完成，请重试', icon: 'none' }) }
     const navigate = (page: string, id: string): void => { wx.navigateTo({ url: '/pages/' + page + '/index?id=' + encodeURIComponent(id) }) }
+    const showSelfAvatar = (page: Json): void => {
+      const prepared = sessionAvatar(api)
+      page.setData({ selfAvatar: prepared.url })
+      void prepared.renewal?.then(avatar => {
+        if (avatar && !page._unloaded && page.data.selfAvatar === prepared.url) page.setData({ selfAvatar: avatar })
+      })
+    }
     const confirm = (title: string, content: string): Promise<boolean> => new Promise(resolve => wx.showModal({ title, content, success: result => resolve(result.confirm), fail: () => resolve(false) }))
     const safe = async (page: any, action: () => Promise<void>, busy?: string): Promise<void> => {
       if (busy && page.data[busy]) return
@@ -27,12 +37,16 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
       try { await action() } catch (error) { toast(error) } finally { if (busy) page.setData({ [busy]: false }) }
     }
     const interaction = async (page: any, id: string, field: string, posts: Json[]): Promise<void> => {
-      if (!await api.requireSession()) return
+      const generation = page._requestGeneration
       // 服务端还没有转发接口（posts/:id/repost），不能把它退回成收藏写请求。
       if (field === 'reposted') { wx.showToast({ title: '转发功能即将上线', icon: 'none' }); return }
       const post = posts.find(item => item.id === id); if (!post) return
+      try { if (!await api.requireSession()) return } catch (error) { toast(error); return }
+      const userId = api.me?.id
+      if (name === 'search' && (generation !== page._requestGeneration || !page.data.postResults.includes(post))) return
       await safe(page, async () => {
         const result = await service.togglePost(id, field, field === 'liked' ? post.liked : post.collected)
+        if (!api.loggedIn || api.me?.id !== userId || name === 'search' && generation !== page._requestGeneration) return
         const change = field === 'liked' ? { liked: result.liked, likeCount: result.likeCount } : { collected: result.favorited }
         // 使用服务端返回的状态，只更新当前视图，不重置分页或滚动位置。
         if (name === 'forum-detail') {
@@ -144,24 +158,48 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
       onRepostPost(event: Json) { return (this.savePostInteraction || this.saveInteraction).call(this, event.detail.id, 'reposted') },
       onOpenPost(event: Json) { wx.navigateTo({ url: '/pages/forum-detail/index?id=' + encodeURIComponent(event.detail.id) }) },
     }
+    const detailViewer = () => getViewerRole(wx) === 'guest' ? 'guest' : String(api.me?.id)
     const definitions: Record<string, Json> = {
-      'beta-access': betaPage(api, gate),
       forum: {
-        data: { posts: [], announcement: '', hasMore: false },
+        data: { posts: [], announcement: '', hasMore: false, feedPageFailed: false },
         onLoad(options: Json = {}) { this.setData({ focusPostId: options.postId || '' }); this._initialLoadPromise = this.reload() },
         async onShow() { this.getTabBar()?.setData({ activeKey: 'forum', publishVisible: false }); if (this._initialLoadPromise) { const initial = this._initialLoadPromise; this._initialLoadPromise = null; await initial; return }; await this.reload() },
         async reload(append = false) {
+          if (append && (this._feedLoading || !this._cursor)) return
           const generation = ++this._requestGeneration
-          if (this.data.timeline === 'following') { this.setData({ posts: [], hasMore: false, loadFailed: false }); return }
+          const current = () => generation === this._requestGeneration && !this._unloaded
+          const cursor = append ? this._cursor : undefined
+          if (!append) this._cursor = null
+          this._feedLoading = true
           try {
+            if (this.data.timeline === 'following') { this.setData({ posts: [], hasMore: false, loadFailed: false, feedPageFailed: false }); return }
             const category = this.data.activeCategory
-            const response = await api.request('/posts' + query({ category: ['recommended', 'latest'].includes(category) ? undefined : category.replace('-', '_'), sort: category === 'latest' ? 'latest' : 'recommended', size: 20, cursor: append ? this._cursor : undefined }))
-            if (generation !== this._requestGeneration) return
+            const response = await api.request('/posts' + query({ category: ['recommended', 'latest'].includes(category) ? undefined : category.replace('-', '_'), sort: category === 'latest' ? 'latest' : 'recommended', size: 20, cursor }))
+            if (!current()) return
+            if (response.hasMore && (!response.nextCursor || response.nextCursor === cursor)) throw new Error('分页响应有误，请重试')
+            const patch: Json = { hasMore: response.hasMore, loadFailed: false, feedPageFailed: false }
+            if (append) {
+              const existing = new Set(this.data.posts.map((post: Json) => post.id))
+              let index = this.data.posts.length
+              for (const item of response.items) {
+                const post = postView(item)
+                if (existing.has(post.id)) continue
+                existing.add(post.id)
+                patch['posts[' + index++ + ']'] = post
+              }
+            } else patch.posts = response.items.map(postView)
+            this.setData(patch)
             this._cursor = response.nextCursor
-            const posts = response.items.map(postView)
-            this.setData({ posts: append ? [...this.data.posts, ...posts] : posts, hasMore: response.hasMore, loadFailed: false })
             this._posts = this.data.posts
-          } catch (error) { if (generation === this._requestGeneration) { this.setData({ loadFailed: true }); toast(error) }; return }
+          } catch (error) {
+            if (current()) {
+              this.setData(append ? { feedPageFailed: true } : { hasMore: false, loadFailed: true, feedPageFailed: false })
+              toast(error)
+            }
+            return
+          } finally {
+            if (current()) this._feedLoading = false
+          }
           if (!append) {
             try { const notices = await api.request('/announcements?scope=forum&size=1'); this._announcement = notices.items[0] || null; this.setData({ announcement: this._announcement?.title || '暂无平台公告' }) }
             catch { this._announcement = null; this.setData({ announcement: '公告暂时无法加载' }) }
@@ -176,16 +214,35 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
         _expanded: [], _openedReplies: [],
         async onLoad(options: Json = {}) {
           this._postId = options.id || ''
+          this._viewVisit = detailVisit(runtime, this._postId)
           // 回复栏左侧展示自己的头像；未登录时留空占位。
-          try { this.setData({ selfAvatar: api.me ? profileView(api.me).avatar : '' }) } catch { /* 头像读不到时留空 */ }
-          await this.reload(); if (options.reply === '1' && this.data.post) this.setData({ composerOpen: true })
+          showSelfAvatar(this)
+          const initial = { viewer: detailViewer(), pending: this.reload() }
+          this._initialDetailLoad = initial
+          await initial.pending
+          if (options.reply === '1' && this.data.post && !this._unloaded && detailViewer() === initial.viewer) this.setData({ composerOpen: true })
+        },
+        async onShow() {
+          this._detailVisible = true
+          const initial = this._initialDetailLoad
+          this._initialDetailLoad = null
+          if (!initial || initial.viewer !== detailViewer()) return this.reload()
+          await initial.pending
+          if (initial.viewer === detailViewer()) this.reportDisplayedDetail()
+        },
+        onHide() { this._detailVisible = false },
+        reportDisplayedDetail() {
+          if (this._detailVisible && !this._unloaded && this.data.post && this._detail?.viewReportingEnabled === true) {
+            this._viewVisit?.displayed(this._detail.permissions?.canComment === true)
+          }
         },
         async reload() {
           if (!this._postId) return
           const generation = ++this._requestGeneration
+          const viewer = detailViewer()
           try {
             const [post, comments] = await Promise.all([api.request('/posts/' + encodeURIComponent(this._postId)), service.comments(this._postId, this._expanded, this._openedReplies)])
-            if (generation !== this._requestGeneration) return
+            if (generation !== this._requestGeneration || viewer !== detailViewer()) return
             // 「按热度 / 按时间」在真机侧同样生效：热度 = 本层点赞 + 下层点赞，同分保持服务端时间序。
             if (this.data.commentOrder === 'hot') {
               const score = (thread: Json) => (Number(thread.likeCount) || 0)
@@ -193,20 +250,26 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
               comments.sort((a: Json, b: Json) => score(b) - score(a))
             }
             this._detail = post; this.setData({ post: postView(post), comments, loadFailed: false })
-          } catch (error) { if (generation === this._requestGeneration) { this.setData({ post: null, loadFailed: true }); toast(error) } }
+            this.reportDisplayedDetail()
+          } catch (error) { if (generation === this._requestGeneration && viewer === detailViewer()) { this.setData({ post: null, loadFailed: true }); toast(error) } }
         },
         saveInteraction(field: string) { return interaction(this, this._postId, field, this.data.post ? [this.data.post] : []) },
         onLikeTap() { return this.saveInteraction('liked') }, onCollectTap() { return this.saveInteraction('collected') },
         onRepostPost() { return this.saveInteraction('reposted') },
-        onReplyTap(event: Json) { const id = event.detail?.id || event.currentTarget.dataset.id; const target = this.data.comments.flatMap((root: Json) => [root, ...root.replies]).find((item: Json) => item.id === id); if (target) this.setData({ composerOpen: true, replyTarget: { id, name: target.authorName } }) },
+        onReplyTap(event: Json) { const id = event.detail?.id || event.currentTarget.dataset.id; const target = this.data.comments.flatMap((root: Json) => [root, ...root.replies]).find((item: Json) => item.id === id); if (target) this.setData({ composerOpen: true, sendFailed: false, replyTarget: { id, name: target.authorName } }) },
         async onSubmitComment() {
-          if (!await api.requireSession() || !this.data.post || !this.data.commentDraft.trim()) return Promise.resolve()
+          try { if (!await api.requireSession()) return } catch (error) { toast(error); return }
+          if (!this.data.post || !this.data.commentDraft.trim()) return Promise.resolve()
+          if (this.data.commentDraft.trim().length > 1000) { toast(new Error('评论需为1至1000字')); return }
           return safe(this, async () => {
             const text = this.data.commentDraft.trim(), target = this.data.replyTarget?.id
             const signature = text + '|' + (target || '')
             if (this._commentSignature !== signature) { this._commentSignature = signature; this._commentRequestId = requestId() }
-            await api.request('/posts/' + this._postId + '/comments', 'POST', { content: text, ...(target ? { replyToCommentId: target } : {}), clientRequestId: this._commentRequestId })
-            this._commentSignature = ''; this.setData({ commentDraft: '', replyTarget: null, composerOpen: false }); await this.reload(); wx.showToast({ title: '评论已发布', icon: 'success' })
+            // Only an attempted submission failure belongs to the inline error state;
+            // safe still owns the original toast and sending lock.
+            try { await api.request('/posts/' + this._postId + '/comments', 'POST', { content: text, ...(target ? { replyToCommentId: target } : {}), clientRequestId: this._commentRequestId }) }
+            catch (error) { this.setData({ sendFailed: !(error instanceof ApiError && [400, 401, 403, 404, 409, 422].includes(error.status)) }); throw error }
+            this._commentSignature = ''; this.setData({ commentDraft: '', replyTarget: null, composerOpen: false, sendFailed: false, keyboardHeight: 0 }); wx.hideKeyboard?.(); await this.reload(); wx.showToast({ title: '评论已发布', icon: 'success' })
           }, 'sending')
         },
         async onCommentLike(event: Json) {
@@ -239,13 +302,27 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
             // 顶栏整行 padding-top 依赖 headerTop，真机侧也要按胶囊实际位置算，否则会与胶囊重叠。
             this.setData({ statusHeight, rightSpace: valid ? menuRightSpace(info.windowWidth, menu.left) : 104, headerTop: valid ? menu.bottom + 8 : statusHeight + 50 })
           } catch { /* 取不到系统几何时保持默认值。 */ }
-          try { this.setData({ selfAvatar: api.me ? profileView(api.me).avatar : '' }) } catch { /* 头像读不到时留空占位。 */ }
-          this._editId = options.editId || ''; this.setData({ editId: this._editId }); if (options.draft === '1' && !this._editId) { try { const draft = wx.getStorageSync('xinkelink.post.draft.v1'); if (draft && typeof draft.content === 'string') this.setData({ form: { ...this.data.form, ...draft, images: [] } }) } catch { toast(new Error('草稿读取失败')) } }; if (this._editId) { try { this._detail = await api.request('/posts/' + encodeURIComponent(this._editId)); if (!this._detail.isMine) throw new Error('不能编辑此帖子'); this.setData({ form: { content: this._detail.content, category: this._detail.category.replace('_', '-'), anonymous: this._detail.author.isAnonymous, images: this._detail.images.map((image: Json) => media(image)) } }) } catch (error) { this.setData({ loadFailed: true }); toast(error) } }
+          showSelfAvatar(this)
+          this.setData({ selfNickname: api.me?.nickname || '' })
+          this._editId = options.editId || ''; this.setData({ editId: this._editId })
+          if (getViewerRole(wx) === 'guest') { this.setData({ form: { content: '', category: 'campus', anonymous: false, images: [] }, loadFailed: true }); return }
+          if (this._editId) {
+            try {
+              this._detail = await api.request('/posts/' + encodeURIComponent(this._editId))
+              if (!this._detail.isMine || getViewerRole(wx) === 'guest') throw new Error('不能编辑此帖子')
+              const draft = options.draft === '1' ? readPostDraft(wx, this._editId) : null
+              this.setData({ form: { content: draft?.content ?? this._detail.content, category: draft?.category ?? this._detail.category.replace('_', '-'), anonymous: this._detail.author.isAnonymous, images: this._detail.images.map((image: Json) => media(image)) } })
+            } catch (error) { this.setData({ loadFailed: true }); toast(error) }
+          } else if (options.draft === '1') {
+            try { const draft = readPostDraft(wx); if (draft) this.setData({ form: draft }) } catch { toast(new Error('草稿读取失败')) }
+          }
           // 编辑态的分类来自服务端，标签要跟着同步，否则 chip 会停在默认板块。
+          if (this.data.form.category === 'study') this.setData({ categories: [...this.data.categories, { key: 'study', label: '学习交流（历史）', short: '学习交流' }] })
           const categories = this.data.categories as Json[], index = categories.findIndex((item: Json) => item.key === this.data.form.category)
           if (index >= 0) this.setData({ categoryIndex: index, categoryLabel: categories[index].label })
         },
-        onShow() {},
+        onShow() { if (getViewerRole(wx) === 'guest') this.setData({ form: { content: '', category: 'campus', anonymous: false, images: [] }, selfNickname: '', selfAvatar: '', loadFailed: true }) },
+        async onSaveDraft() { return safe(this, async () => { if (!await api.requireSession() || this.data.loadFailed || this.data.publishing || this._published) return; if (savePostDraft(wx, this.data.form, this._editId)) wx.showToast({ title: '文字草稿已保存', icon: 'success' }) }) },
         async onPublishTap() {
           if (!await api.requireSession() || this.data.loadFailed || !this.data.form.content.trim()) return Promise.resolve()
           return safe(this, async () => {
@@ -254,7 +331,7 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
             const signature = JSON.stringify(body)
             if (this._publishSignature !== signature) { this._publishSignature = signature; this._publishRequestId = requestId() }
             const post = await api.request(this._editId ? '/posts/' + this._editId : '/posts', this._editId ? 'PATCH' : 'POST', this._editId ? { ...body, expectedVersion: this._detail.version } : { ...body, anonymous: form.anonymous, clientRequestId: this._publishRequestId })
-            this._published = true; if (!this._editId) wx.removeStorageSync('xinkelink.post.draft.v1'); wx.showToast({ title: this._editId ? '修改已保存' : '发布成功', icon: 'success' }); wx.redirectTo({ url: '/pages/forum-detail/index?id=' + encodeURIComponent(post.id) })
+            this._published = true; try { clearPostDraft(wx, this._editId) } catch { toast(new Error('内容已保存，草稿清理失败')) }; wx.showToast({ title: this._editId ? '修改已保存' : '发布成功', icon: 'success' }); wx.redirectTo({ url: '/pages/forum-detail/index?id=' + encodeURIComponent(post.id) })
           }, 'publishing')
         },
       },
@@ -276,7 +353,7 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
           catch(error){if(generation===this._requestGeneration){this.setData({postPageFailed:true});toast(error)}}finally{if(generation===this._requestGeneration)this.setData({loadingType:''})}
         },
         onReachBottom(){return this.loadMoreSearch()},onLoadMoreTap(){return this.loadMoreSearch()},
-        onShow(){this.getTabBar()?.setData({activeKey:'search'});this.readHot()},
+        onShow(){this.getTabBar()?.setData({activeKey:'search'});this.setData({history:readSearchHistory(wx)});this.readHot()},
         savePostInteraction(id:string,field:string){return interaction(this,id,field,this.data.postResults)},reload(){return this.runSearch()},
       },
       profile: {
@@ -346,7 +423,9 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
             const form = this.data.form
             if (!form.nickname.trim() || form.nickname.length > 20 || form.bio.length > 40 || form.major.length > 60 || form.className.length > 40 || form.studentId.length > 32 || form.year && !/^(19|20)\d{2}$/.test(form.year)) throw new Error('请检查资料格式')
             let avatarImageId = this._detail.avatar?.imageId || null
-            if (form.avatar !== profileView(this._detail).avatar) avatarImageId = (await api.upload(form.avatar, 'avatar')).id
+            if (form.avatar && form.avatar !== profileView(this._detail).avatar && backendImageId(form.avatar) !== String(avatarImageId)) {
+              avatarImageId = (await api.upload(form.avatar, 'avatar')).id
+            }
             const me = await api.request('/me', 'PATCH', { nickname: form.nickname.trim(), bio: form.bio.trim(), major: form.major.trim(), className: form.className.trim(), enrollmentYear: form.year || null, avatarImageId, expectedVersion: this._detail.version })
             api.setMe(me); wx.setStorageSync(LOCAL_STUDENT_ID_KEY, form.studentId.trim()); this._detail = me
             wx.showToast({ title: '资料已保存', icon: 'success' }); wx.navigateBack({ delta: 1 })
@@ -360,31 +439,30 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
         saveInteraction(id: string, field: string) { return interaction(this, id, field, this.data.profile?.posts || []) },
       },
       'my-posts': {
-        async reload() { try { this.setData({ posts: (await service.all('/me/posts')).map(postView), loadFailed: false }) } catch (error) { this.setData({ loadFailed: true }); toast(error) } },
+        onPublishTap() { return openProtected(this, '/pages/forum-publish/index') },
+        async reload() { const userId = api.me?.id; try { const posts = (await service.all('/me/posts')).map(postView); if (!api.loggedIn || api.me?.id !== userId || this._unloaded) return; this.setData({ posts, loggedIn: true, loadFailed: false }) } catch (error) { this.setData({ loadFailed: true }); toast(error) } },
         saveInteraction(id: string, field: string) { return interaction(this, id, field, this.data.posts) },
         async onDeleteTap(event: Json) {
           if (!await api.requireSession()) return Promise.resolve()
-          const id = event.currentTarget.dataset.id, target = this.data.posts.find((post: Json) => post.id === id)
-          return safe(this, async () => { if (!target || !await confirm('删除这条帖子？', '删除后无法恢复。')) return; await api.request('/posts/' + id, 'DELETE', undefined, { 'If-Match': '"' + target.version + '"' }); await this.reload() }, 'deleting')
+          const id = event.currentTarget.dataset.id, target = this.data.posts.find((post: Json) => post.id === id), userId = api.me?.id
+          return safe(this, async () => { if (!target || !await confirm('删除这条帖子？', '删除后无法恢复。') || !api.loggedIn || api.me?.id !== userId) return; await api.request('/posts/' + id, 'DELETE', undefined, { 'If-Match': '"' + target.version + '"' }); await this.reload() }, 'deleting')
         },
         onEditTap(event: Json) { const id = event.currentTarget.dataset.id; wx.navigateTo({ url: '/pages/forum-publish/index?editId=' + encodeURIComponent(id) }) },
       },
       'my-collections': {
-        async reload() { try { this.setData({ ...await service.likes(), loadFailed: false }) } catch (error) { this.setData({ loadFailed: true }); toast(error) } },
+        async reload() { const userId = api.me?.id; try { const liked = await service.likes(); if (!api.loggedIn || api.me?.id !== userId || this._unloaded) return; this.setData({ ...liked, loggedIn: true, loadFailed: false }) } catch (error) { this.setData({ loadFailed: true }); toast(error) } },
         saveInteraction(id: string, field: string) { return interaction(this, id, field, this.data.posts) },
-      },
-      login: {
-        onShow() { this.setData({ loadFailed: false }) }, reload() { this.setData({ loadFailed: false }) },
-        onLoginTap() { return safe(this, async () => { await api.login(); wx.showToast({ title: '微信登录成功', icon: 'success' }); wx.navigateTo({ url: '/pages/profile/index' }) }, 'busy') },
-        onGuestTap() { if (this.data.busy) return; if (api.loggedIn) return safe(this, async () => { await api.logout(); wx.switchTab({ url: '/pages/forum/index' }) }, 'busy'); wx.switchTab({ url: '/pages/forum/index' }); return Promise.resolve() },
       },
       feedback: {},
       contact: {
         async onShow() { this.getTabBar()?.setData({ activeKey: name === 'notifications' ? 'notifications' : 'contact', publishVisible: false }); if (!this._realtime) this._realtime = new Realtime(api, () => { void this.reload() }); this._realtime.start(); await this.reload() },
         onHide() { this._realtime?.stop() }, onUnload() { this._realtime?.stop() },
         async reload() {
+          if (getViewerRole(wx) === 'guest') { this.setData({ guest: true, conversations: [], visibleConversations: [], notifications: [], visibleNotifications: [], messageUnread: 0, notificationUnread: 0 }); return }
+          const userId = api.me?.id
           const outcomes = await Promise.all([service.conversations(), service.notifications(), api.request('/me/unread')].map(task => task.then(value => ({ status: 'fulfilled', value }), error => ({ status: 'rejected', value: null, error }))))
-          const patch: Json = {}
+          if (!api.loggedIn || api.me?.id !== userId) return
+          const patch: Json = { guest: false }
           if (outcomes[0].status === 'fulfilled') { patch.conversations = outcomes[0].value; patch.messagesFailed = false } else patch.messagesFailed = true
           if (outcomes[1].status === 'fulfilled') { patch.notifications = outcomes[1].value; patch.notificationsFailed = false } else patch.notificationsFailed = true
           if (outcomes[2].status === 'fulfilled') { const unread = outcomes[2].value; patch.messageUnread = unread.raw.messages; patch.notificationUnread = unread.raw.comments + unread.raw.reactions + unread.raw.announcements; this.getTabBar()?.setData({ unreadCount: unread.badgeTotal, messageUnread: unread.raw.messages, notificationUnread: unread.raw.comments + unread.raw.reactions + unread.raw.announcements }) }
@@ -411,11 +489,13 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
         onShow() {},
         async onSubmitReport() {
           if (!await api.requireSession() || this.data.targetMissing) return Promise.resolve()
+          const userId = api.me?.id
           return safe(this, async () => {
             const codes = ['commercial_ad', 'fraud_or_offsite_payment', 'harassment', 'impersonation', 'other'], index = this.data.reasons.indexOf(this.data.reason)
             if (index < 0 || !this.data.detail.trim() || this.data.detail.length > 200) throw new Error('请选择原因并填写1至200字说明')
-            if (!await confirm('确认提交举报？', '请确认举报内容真实、准确。')) return
+            if (!await confirm('确认提交举报？', '请确认举报内容真实、准确。') || !api.loggedIn || api.me?.id !== userId) return
             const evidenceImageIds = await service.images(this.data.evidence, 'report')
+            if (!api.loggedIn || api.me?.id !== userId) return
             const body = { targetType: this.data.targetKind, targetId: this.data.targetId, reasonCode: codes[index], description: this.data.detail.trim(), evidenceImageIds }
             const signature = JSON.stringify(body); if (this._reportSignature !== signature) { this._reportSignature = signature; this._reportRequestId = requestId() }
             await api.request('/reports', 'POST', { ...body, clientRequestId: this._reportRequestId })
@@ -437,13 +517,21 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
             if (!this._conversationId) { if (!this._peerId) throw new Error('会话不存在'); this._conversationId = (await service.conversation(this._peerId)).id }
             const conversation = await api.request('/conversations/' + this._conversationId); this._peerId = conversation.peer.id
             const settings = await api.request('/conversations/' + this._conversationId + '/settings'); this._settings = settings
-            let page = await service.messages(this._conversationId, this._targetMessageId ? { aroundMessageId: this._targetMessageId } : {})
+            // Keep the existing DTO projection; the raw request ID is used only to
+            // reconcile this page's transient bubble with an authoritative record.
+            let acknowledgedRequestId = ''
+            const messagesPage = async (args: Json = {}): Promise<Json> => {
+              const response = await api.request('/conversations/' + encodeURIComponent(this._conversationId) + '/messages' + query({ size: 100, ...args }))
+              if (this._sendRequestId && response.items.some((item: Json) => item.isMine && item.clientMessageId === this._sendRequestId)) acknowledgedRequestId = this._sendRequestId
+              return { ...response, items: response.items.map(messageView) }
+            }
+            let page = await messagesPage(this._targetMessageId ? { aroundMessageId: this._targetMessageId } : {})
             let messages = page.items
             // On reconnection HTTP refetches known history too, so hidden placeholders replace stale text.
             let before = page.nextBeforeSequence
             const known = this._messages?.[0]?.sequence
             while (page.hasMore && before && known && messages[0] && (messages[0].sequence.length > known.length || messages[0].sequence.length === known.length && messages[0].sequence > known)) {
-              page = await service.messages(this._conversationId, { beforeSequence: before }); messages = mergeMessages(messages, page.items); before = page.nextBeforeSequence
+              page = await messagesPage({ beforeSequence: before }); messages = mergeMessages(messages, page.items); before = page.nextBeforeSequence
             }
             // Replace the authoritative window, including cleared/hidden records; retain only older loaded pages.
             const first = messages[0]?.sequence
@@ -454,9 +542,16 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
             if (views.length) { try { await api.request('/conversations/' + this._conversationId + '/read', 'PUT', { readUpToSequence: views[views.length - 1].sequence }) } catch { readStateFailed = true } }
             // 头像地址有有效期，不能一直沿用登录时缓存；刷新资料不触发会话重连。
             const self = profileView(await api.request('/me').catch(() => ({ ...api.me, avatar: null })))
-            this.setData({ peer: service.conversationView(conversation).peer, messages: views, selfAvatar: self.avatar, selfNickname: self.nickname || '我',
+            const acknowledgement: Json = {}
+            if (acknowledgedRequestId && acknowledgedRequestId === this._sendRequestId) {
+              acknowledgement.sendAcknowledged = true
+              acknowledgement.failedText = ''
+              if (this.data.input.trim() === this._sendText) acknowledgement.input = ''
+            }
+            this.setData({ peer: service.conversationView(conversation).peer, messages: views, lastSelfMessageId: views.filter((message: Json) => message.fromSelf).slice(-1)[0]?.id || '', ownBlocked: settings.blocked === true, selfAvatar: self.avatar, selfNickname: self.nickname || '我',
+              ...acknowledgement,
               scrollTo: 'message-' + (this._targetMessageId || views[views.length - 1]?.id || ''), loadFailed: false, missing: false, readStateFailed,
-              canSend: !settings.blocked, blockedReason: settings.blocked ? '你已屏蔽这位同学，暂时无法发送' : '' })
+              canSend: !settings.blocked, blockedReason: settings.blocked === true ? '你已屏蔽这位同学，解除后才能发送消息' : '' })
           } catch (error) { this.setData({ loadFailed: true, canSend: false }); toast(error) }
         })()
         try { await this._loading } finally { this._loading = null }
@@ -470,13 +565,14 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
       async onSendTap() {
         if (!await api.requireSession() || !this._conversationId || !this.data.canSend) return Promise.resolve()
         return safe(this, async () => {
-          const text = this.data.input.trim(); if (!text || text.length > 1000) throw new Error('消息需为1至1000字')
-          if (this._sendText !== text) { this._sendText = text; this._sendRequestId = requestId() }
-          try { await service.send(this._conversationId, text, this._sendRequestId) } catch (error) { this.setData({ failedText: this.data.input }); throw error }
-          this._sendText = ''; this.setData({ input: '', failedText: '' }); await this.reload()
+          const input = this.data.input, text = input.trim(); if (!text || text.length > 1000) throw new Error('消息需为1至1000字')
+          if (this._sendText !== text || this.data.sendAcknowledged) { this._sendText = text; this._sendRequestId = requestId() }
+          this.setData({ sendAcknowledged: false })
+          try { await service.send(this._conversationId, text, this._sendRequestId) } catch (error) { if (this.data.sendAcknowledged) return; this.setData({ failedText: input }); throw error }
+          this._sendText = ''; this.setData({ ...(this.data.input.trim() === text ? { input: '' } : {}), failedText: '' }); await this.reload()
         }, 'sending')
       },
-      onRetrySendTap() { return this.onSendTap() },
+      onRetrySendTap() { if (this.data.sending || !this.data.failedText) return; this.setData({ input: this.data.failedText }); return this.onSendTap() },
       onSettingsTap() { wx.navigateTo({ url: '/pages/chat-settings/index?conversationId=' + encodeURIComponent(this._conversationId) }) },
     }
     definitions['contact-chat'] = chat
@@ -484,38 +580,44 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
       _conversationId: '',
       async onLoad(options: Json = {}) { this._conversationId = options.conversationId || ''; this._peerId = options.peerId || ''; await this.reload() },
       async reload() {
+        const userId = api.me?.id
         try {
           if (!this._conversationId) { if (!this._peerId) throw new Error('会话不存在'); this._conversationId = (await service.conversation(this._peerId)).id }
           const [conversation, preferences] = await Promise.all([api.request('/conversations/' + this._conversationId), api.request('/conversations/' + this._conversationId + '/settings')])
+          if (!api.loggedIn || api.me?.id !== userId || this._unloaded) return
           this._peerId = conversation.peer.id
-          this.setData({ peer: service.conversationView(conversation).peer, preferences, loadFailed: false })
+          this.setData({ peer: service.conversationView(conversation).peer, preferences, loggedIn: true, loadFailed: false })
         } catch (error) { this.setData({ loadFailed: true }); toast(error) }
       },
       async onPreferenceChange(event: Json) {
         const key = event.currentTarget.dataset.key, value = event.detail.value
         if (!['pinned', 'muted', 'blocked'].includes(key) || !await api.requireSession()) return Promise.resolve()
+        const userId = api.me?.id
         return safe(this, async () => {
-          if (key === 'blocked') { if (value && !await confirm('屏蔽这位同学？', '屏蔽后本人无法继续向对方发送消息。')) return; await api.request('/me/blocks/' + this._peerId, value ? 'PUT' : 'DELETE') }
+          if (key === 'blocked') { if (value && !await confirm('屏蔽这位同学？', '屏蔽后本人无法继续向对方发送消息。')) return; if (!api.loggedIn || api.me?.id !== userId) return; await api.request('/me/blocks/' + this._peerId, value ? 'PUT' : 'DELETE') }
           else await api.request('/conversations/' + this._conversationId + '/settings', 'PATCH', { [key]: value, expectedVersion: this.data.preferences.version })
           await this.reload()
         }, 'busy')
       },
       async onHistoryInput(event: Json) {
-        const historyQuery = event.detail.value.slice(0, 60); this.setData({ historyQuery }); const generation = ++this._requestGeneration
-        try { const response = historyQuery.trim() ? await service.messages(this._conversationId, { q: historyQuery.trim() }) : { items: [] }; if (generation === this._requestGeneration) this.setData({ historyMatches: response.items }) } catch (error) { toast(error) }
+        const historyQuery = event.detail.value.slice(0, 60); this.setData({ historyQuery }); const generation = ++this._requestGeneration, userId = api.me?.id
+        try { const response = historyQuery.trim() ? await service.messages(this._conversationId, { q: historyQuery.trim() }) : { items: [] }; if (generation === this._requestGeneration && api.loggedIn && api.me?.id === userId && !this._unloaded) this.setData({ historyMatches: response.items }) } catch (error) { toast(error) }
       },
-      onHistoryMessageTap(event: Json) { wx.navigateTo({ url: '/pages/contact-chat/index?conversationId=' + encodeURIComponent(this._conversationId) + '&messageId=' + encodeURIComponent(event.currentTarget.dataset.id) }) },
+      onFindHistoryTap() { this.setData({ historyOpen: !this.data.historyOpen, historyQuery: '', historyMatches: [] }) },
+      onReportTap() { if (this.data.peer) wx.navigateTo({ url: '/pages/report/index?kind=user&id=' + encodeURIComponent(this.data.peer.id) }) },
+      onHistoryMessageTap(event: Json) { if (!this.data.historyMatches.some((item: Json) => item.id === event.currentTarget.dataset.id)) return; wx.navigateTo({ url: '/pages/contact-chat/index?conversationId=' + encodeURIComponent(this._conversationId) + '&messageId=' + encodeURIComponent(event.currentTarget.dataset.id) }) },
       onClearHistoryTap() {
-        return safe(this, async () => { if (!await confirm('清空聊天记录？', '仅清空本人可见的记录，不影响对方。')) return; const page = await service.messages(this._conversationId); const sequence = page.items[page.items.length - 1]?.sequence; if (sequence) await api.request('/conversations/' + this._conversationId + '/clear', 'POST', { clearThroughSequence: sequence, confirmed: true }); this.setData({ historyMatches: [] }); await this.reload() }, 'busy')
+        const userId = api.me?.id
+        return safe(this, async () => { if (!await confirm('清空聊天记录？', '仅清空本人可见的记录，不影响对方。') || !api.loggedIn || api.me?.id !== userId) return; const page = await service.messages(this._conversationId); const sequence = page.items[page.items.length - 1]?.sequence; if (sequence && api.loggedIn && api.me?.id === userId) await api.request('/conversations/' + this._conversationId + '/clear', 'POST', { clearThroughSequence: sequence, confirmed: true }); this.setData({ historyMatches: [] }); await this.reload() }, 'busy')
       },
     }
     definitions.notifications = definitions.contact
-    definitions.ai = { onShow() { this.getTabBar()?.setData({ activeKey: 'ai', publishVisible: false }) }, reload() {} }
+    definitions.ai = { onShow: fixture.onShow, onUnload: fixture.onUnload, reload() {} }
     definitions['new-chat'] = {
       async reload() { if (!api.loggedIn) { this.setData({ peers: [], loadFailed: false }); return }; try { const conversations = await service.conversations(); this.setData({ peers: conversations.map(item => item.peer), loadFailed: false }); this.filterPeers?.() } catch (error) { this.setData({ peers: [], loadFailed: true }); toast(error) } },
       async onStartChat(event: Json) { const id = event.currentTarget?.dataset?.peerId || event.currentTarget?.dataset?.id || event.detail?.peerId; if (typeof id !== 'string' || !id || id === api.me?.id) return; if (await api.requireSession()) wx.navigateTo({ url: '/pages/contact-chat/index?peerId=' + encodeURIComponent(id) }) },
     }
-    definitions.drafts = { onShow: fixture.onShow, reload() {} }
+    definitions.drafts = { onShow: fixture.onShow, reload() {}, onOpenPost() { return safe(this, async () => { if (await api.requireSession()) wx.navigateTo({ url: '/pages/forum-publish/index?draft=1' }) }) } }
     const implementation = definitions[name]
     if (!implementation) throw new Error('Missing real backend page: ' + name)
     const definition: Json = { ...fixture, ...common, ...implementation, data: { ...fixture.data, ...pageData, ...implementation.data } }
@@ -527,16 +629,9 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
       const original = definition[lifecycle]
       definition[lifecycle] = async function(this: any, ...args: any[]) {
         api.setProfilePrompt(() => this.requestProfileConsent())
-        if (name !== 'beta-access') {
-          if (lifecycle === 'onLoad') { this._betaTarget = betaTarget(name, args[0]); gate.enterBusiness(this._betaTarget) }
-          if (!this._betaTarget) this._betaTarget = betaTarget(name)
-          if (lifecycle === 'onShow' && (!this._betaStarted || this._betaWasHidden)) gate.enterBusiness(this._betaTarget)
-          this._betaStarted = true; this._betaWasHidden = false
-          if (!await gate.guard(() => !this._unloaded && !this._betaWasHidden)) return
-        }
         if (lifecycle === 'onShow') this._pageVisible = true
         await original?.apply(this, args)
-        if (name !== 'beta-access' && lifecycle === 'onShow' && this._pageVisible) {
+        if (lifecycle === 'onShow' && this._pageVisible) {
           this._imageRenewal ||= new PageImageRenewal(runtime, this)
           await this._imageRenewal.start()
         }
@@ -544,7 +639,7 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
     }
     const originalHide = definition.onHide
     definition.onHide = function(this: any, ...args: any[]) {
-      this._pageVisible = false; this._betaWasHidden = true; this._imageRenewal?.stop()
+      this._pageVisible = false; this._imageRenewal?.stop()
       return originalHide?.apply(this, args)
     }
     const originalUnload = definition.onUnload
@@ -556,7 +651,7 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
     if (['my-posts', 'my-collections', 'profile-edit', 'contact', 'notifications', 'contact-chat', 'chat-settings'].includes(name)) {
       const reload = definition.reload
       definition.reload = async function(this: any, ...args: any[]): Promise<void> {
-        if (!await api.requireSession()) { this.setData({ loadFailed: true }); return }
+        if (getViewerRole(wx) === 'guest') { this.setData({ loggedIn: false, guest: true, posts: [], peers: [], conversations: [], visibleConversations: [], notifications: [], visibleNotifications: [], historyMatches: [], historyQuery: '', peer: null, preferences: {}, messages: [], loadFailed: false }); try { if (!await api.requireSession()) { this.setData({ loadFailed: true }); return } } catch (error) { this.setData({ loadFailed: true }); toast(error); return } }
         await reload.apply(this, args)
       }
     }
@@ -564,7 +659,7 @@ export function registerPage(runtime: Runtime, nativePage: typeof Page, name: st
     const protectedActions: Record<string, string[]> = {
       contact: ['onMarkAllRead', 'onNotificationTap'],
       'contact-chat': ['onScrollToUpper'],
-      'chat-settings': ['onHistoryInput', 'onClearHistoryTap'], 'my-posts': ['onEditTap'],
+      'chat-settings': ['onHistoryInput', 'onClearHistoryTap', 'onFindHistoryTap', 'onHistoryMessageTap', 'onReportTap'], 'my-posts': ['onEditTap'],
       'user-home': ['onEditTap'],
     }
     for (const actionName of protectedActions[name] || []) {

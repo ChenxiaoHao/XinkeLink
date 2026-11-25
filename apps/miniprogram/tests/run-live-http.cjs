@@ -9,7 +9,7 @@ const { client } = require('../.test-dist/backend/client.js');
 async function main() {
   assert.equal(process.env.XINKELINK_LIVE_HTTP, '1', '须显式设置XINKELINK_LIVE_HTTP=1');
   const alice = createHttpRuntime({ code: 'day5-alice' }), bob = createHttpRuntime({ code: 'day5-bob' });
-  const page = (name, runtime) => loadPage(`pages/${name}/index.js`, { ...runtime, fixture: false, betaPhase: 'open' });
+  const page = (name, runtime) => loadPage(`pages/${name}/index.js`, { ...runtime, fixture: false });
   await client(alice.wx).login(); await client(bob.wx).login();
   assert.ok(alice.saved.get('xinkelink.backend.session.v1')); assert.ok(bob.saved.get('xinkelink.backend.session.v1'));
   const marker = '原生Page真实HTTP验收-' + Date.now();

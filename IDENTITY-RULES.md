@@ -1,3 +1,9 @@
+# 2026-11-14 当前身份规则补记
+
+以下旧审查保留作历史。当前已统一页面/组件入口到`features/profile/viewer.ts:getViewerRole()`；空会话默认guest，任何读取不确定按guest。fixture私人页、搜索历史、草稿读隔离且写守卫；退出保留数据，重登恢复。live本地历史/草稿按用户ID分区，不能读fixture旧key。本人登录→profile；访客及他人→user-home公开主页。异步确认及私人响应须验证发起身份。完整修复状态见[BUGS.md](./BUGS.md)，验证证据见[交接记录](./docs/project-handover.md)。
+
+---
+
 # 演示模式身份判定审查（只读，未改任何代码）
 
 - 日期：2026-11-13。范围：`apps/miniprogram/miniprogram/`（fixture 演示模式为主，后端模式对照）。

@@ -29,7 +29,7 @@ const selectedSafe = computed(() => selectedEvent.value ? toSafeAuditRow(selecte
 const outcomeLabel: Record<AuditOutcome, string> = { success: '操作成功', business_rejected: '业务拒绝', execution_error: '执行异常' }
 const moduleLabel: Record<AuditModule, string> = {
   posts: '帖子管理', comments: '评论管理', reports: '举报审核',
-  users: '用户管理', announcements: '公告管理', notifications: '通知管理', settings: '系统设置',
+  users: '用户管理', announcements: '公告管理', notifications: '通知管理', settings: '系统设置', lucky_bags: '福袋（历史）', ai_knowledge: 'AI 知识库',
 }
 const actionLabel: Record<string, string> = {
   set_status: '调整展示状态', restrictions: '调整权限', ban: '封禁用户', release: '解除限制', resolve: '处理举报', create: '新建草稿', edit: '编辑内容', reset: '恢复默认值',
@@ -178,25 +178,24 @@ export default { components: { Search, X } }
 <style scoped>
 .audit-view { width: 100%; max-width: 1600px; margin: 0 auto; color: var(--xlk-color-text); }
 .audit-heading-actions { display: flex; align-items: center; gap: 9px; }
-.audit-demo-notice { margin: -3px 0 15px; border-color: #eeeeee; background: #f5f5f5; color: #444444; }
-.audit-filter-panel { padding: 13px 14px 10px; margin-bottom: 14px; }
-.audit-filter-grid { display: grid; grid-template-columns: minmax(190px, 1.4fr) minmax(125px, 1fr) repeat(3, minmax(125px, .9fr)) repeat(2, minmax(125px, .8fr)) auto; gap: 8px; align-items: center; }
-.audit-filter-grid .el-input__wrapper, .audit-filter-grid .el-select__wrapper, .audit-filter-grid .el-date-editor { min-height: 36px; background: #fafafa; box-shadow: 0 0 0 1px #f5f5f5 inset !important; }
+.audit-demo-notice { display: none; }
+.audit-filter-panel { padding: 14px 18px; margin-bottom: 0; border-radius: 20px 20px 0 0; border-bottom: 1px solid var(--xlk-color-divider); box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03); }
+.audit-filter-grid { display: grid; grid-template-columns: minmax(190px, 1.4fr) minmax(125px, 1fr) repeat(3, minmax(125px, .9fr)) repeat(2, minmax(125px, .8fr)) auto; gap: 9px; align-items: center; }
+.audit-filter-grid .el-input__wrapper, .audit-filter-grid .el-select__wrapper, .audit-filter-grid .el-date-editor { min-height: 36px; border-radius: 12px; background: var(--xlk-color-primary-soft); box-shadow: none !important; }
 .audit-filter-grid .el-button { margin: 0; }
-.audit-filter-summary { padding-top: 9px; color: #666666; font-size: 13px; }
-.audit-filter-summary strong { color: #171717; }
-.audit-table-panel { overflow: hidden; }
+.audit-filter-summary { display: none; }
+.audit-table-panel { overflow: hidden; border-radius: 0 0 20px 20px; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.035); }
 .audit-table { min-height: 250px; }
-.audit-actor { color: #444444; font-size: 13px; font-weight: 600; }
-.audit-module-chip { display: inline-flex; padding: 4px 7px; color: #444444; background: #f5f5f5; border-radius: 5px; font-size: 13px; white-space: nowrap; }
+.audit-actor { color: var(--xlk-color-text); font-size: 13px; font-weight: 600; }
+.audit-module-chip { display: inline-flex; padding: 3px 10px; color: var(--xlk-accent-blue); background: var(--xlk-accent-blue-soft); border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .audit-action-cell { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.audit-action-cell strong { color: #303030; font-size: 13px; font-weight: 650; }
-.audit-action-cell span { overflow: hidden; color: #666666; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.audit-table .cell small { color: #666666; font-size: 13px; }
-.audit-outcome { display: inline-flex; align-items: center; padding: 4px 7px; border-radius: 10px; font-size: 13px; white-space: nowrap; }
-.outcome-success { color: #444444; background: #f5f5f5; }
-.outcome-rejected { color: #444444; background: #f5f5f5; }
-.outcome-error { color: #b42318; background: #f5f5f5; }
+.audit-action-cell strong { color: var(--xlk-color-text); font-size: 13.5px; font-weight: 650; }
+.audit-action-cell span { overflow: hidden; color: var(--xlk-color-muted); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.audit-table .cell small { color: var(--xlk-color-muted); font-size: 12.5px; }
+.audit-outcome { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.outcome-success { color: var(--xlk-accent-mint-strong); background: var(--xlk-accent-mint); }
+.outcome-rejected { color: var(--xlk-accent-amber); background: var(--xlk-accent-amber-soft); }
+.outcome-error { color: var(--xlk-accent-rose); background: var(--xlk-accent-rose-soft); }
 .audit-empty { display: flex; flex-direction: column; align-items: center; padding: 24px 12px; color: #666666; }
 .audit-empty-icon { width: 42px; height: 42px; display: grid; place-items: center; margin-bottom: 10px; color: #666666; background: #f5f5f5; border-radius: 50%; }
 .audit-empty strong { color: #303030; font-size: 13px; }

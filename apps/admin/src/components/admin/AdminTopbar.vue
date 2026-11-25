@@ -1,17 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Bell, ChevronDown, LogOut, Search, UserRound } from '@lucide/vue'
 import { useAdminAuthStore } from '../../stores/admin-auth'
 import { ADMIN_NAV_ITEMS } from '../../config/admin-navigation'
-import { useAdminBetaStore } from '../../stores/admin-beta'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAdminAuthStore()
-const beta = useAdminBetaStore()
-onMounted(() => { void beta.load() })
-onUnmounted(() => { beta.reset() })
 const searchText = ref('')
 const showSuggestions = ref(false)
 const currentTitle = computed(() => String(route.meta.title ?? '数据概览'))
@@ -43,7 +39,6 @@ function hideSuggestions() {
       <span>工作台</span><span aria-hidden="true">/</span><span class="breadcrumb-current">{{ currentTitle }}</span>
     </div>
     <div class="topbar-actions">
-      <RouterLink to="/admin/beta" class="topbar-phase" data-testid="beta-phase-badge" aria-label="查看内测阶段">{{ beta.phaseLabel }}</RouterLink>
       <div class="top-search-wrap">
         <el-input
           v-model="searchText"
@@ -88,13 +83,12 @@ function hideSuggestions() {
 </template>
 
 <style scoped>
-.topbar-phase { flex: none; padding: 4px 8px; border: 1px solid #e5e5e5; border-radius: 4px; color: #555; font-size: 12px; white-space: nowrap; text-decoration: none; }
 .top-search-wrap { position: relative; }
-.top-search :deep(kbd) { padding: 2px 5px; color: #666666; background: #ffffff; border: 1px solid #eeeeee; border-radius: 4px; font-family: inherit; font-size: 12px; }
-.search-suggestions { position: absolute; top: calc(100% + 7px); right: 0; z-index: 5; width: min(360px, 78vw); padding: 5px; background: #ffffff; border: 1px solid #eeeeee; border-radius: 9px; box-shadow: 0 8px 24px rgba(0, 0, 0, .13); }
-.search-suggestion { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 9px 10px; color: #303030; background: #ffffff; border: 0; border-radius: 6px; text-align: left; cursor: pointer; }
-.search-suggestion:hover { background: #fafafa; }
-.search-suggestion small, .search-no-result { color: #666666; font-size: 12px; }
+.top-search :deep(kbd) { padding: 2px 5px; color: var(--xlk-color-muted); background: #ffffff; border: 1px solid var(--xlk-color-border); border-radius: 6px; font-family: inherit; font-size: 12px; }
+.search-suggestions { position: absolute; top: calc(100% + 8px); right: 0; z-index: 5; width: min(360px, 78vw); padding: 6px; background: #ffffff; border: 1px solid var(--xlk-color-divider); border-radius: 16px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12); }
+.search-suggestion { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 12px; color: var(--xlk-color-text); background: #ffffff; border: 0; border-radius: 10px; text-align: left; cursor: pointer; }
+.search-suggestion:hover { background: var(--xlk-color-primary-soft); }
+.search-suggestion small, .search-no-result { color: var(--xlk-color-muted); font-size: 12px; }
 .search-no-result { padding: 12px 10px; }
 :deep(.el-dropdown-menu__item) { display: flex; align-items: center; gap: 8px; }
 </style>

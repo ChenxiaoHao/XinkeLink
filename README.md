@@ -1,3 +1,14 @@
+> **2026-11-22 内测与福袋下线**：小程序和管理后台已移除入口，服务端已移除内测准入、福袋接口与开奖任务。V19 停用历史中奖通知，保留内测码、活动、领奖和操作审计记录。历史实现见[福袋交接](docs/backend/20-lucky-bag-acceptance.md)。
+
+
+> **2026-11-17 Kafka浏览统计**：公开详情→可靠接收日志→Kafka→幂等精确PV/UV→Redis→搜索页真实近7日Top5已实现并在命名隔离库验收。小程序355、后端普通329、数据库集成231；V13、35业务表。18081为同一验收JAR，统计四开关、通知MQ及CDC均关闭，热榜诚实空态；不是开发库上线。统计口径、故障恢复、性能成本、文件归属和无需安装即可阅读的学习指南见[当前交接](docs/project-handover.md)顶部；下方旧状态为历史。
+
+> **2026-11-16 RocketMQ互动通知**：既有帖子赞、收藏、评论赞、评论/回复支持事务Outbox→可靠发布→Inbox幂等落库，默认同步兼容；V12当前29业务表。小程序335、后端普通308、真实数据库214、真实MQ/双JVM/故障/性能和当前JAR的Canal专项均通过。18081已运行验收JAR，MQ/发布器/消费者/CDC均关闭，MQ仅隔离库验收。文件归属、成本、运行状态及复跑见[当前交接](docs/project-handover.md)顶部；下方25表及早期环境说明为历史记录。
+
+> **2026-11-14首批Redis缓存更新**：仅缓存帖子公共likeCount/commentCount，个人状态及权限仍实时查验。本轮小程序315、后端单测205、真实数据库集成173条通过（其中缓存专项14条）。隔离MySQL13306、Redis16379及18081服务已恢复；已备份后真实应用既有V10/V11。缓存配置、真实测试与SQL/耗时对比见[最新交接记录](docs/project-handover.md)开头。上一批B01—B11未提交修改完整保留，本轮未提交推送。后续AI方案为Python＋LangGraph＋ChromaDB，旧Spring AI顺序作废。
+
+> **2026-11-14业务修复更新**：基线`7fc1af4`的B01—B11已修复并补回归；正常启动直接进入首页，取消内测码准入，沿用服务端open阶段（已有数据库需应用新增V10/V11）。本次小程序315、服务端175、后台89条通过；真实DB/微信联调未完成。最新证据及下一步见[接手记录](docs/project-handover.md)开头、[缺陷状态](BUGS.md)和[当前流程](docs/business-flows.md)。下方旧审查数量/环境说明仅供历史参考。
+
 # XinkeLink
 
 中文名称：信科 Link
@@ -8,7 +19,7 @@
 
 技术栈已确定：原生微信小程序 + TypeScript + WXML/WXSS；PC 后台为 Vue 3 + TypeScript + Vite + Element Plus；服务端为 Java + Spring Boot + Maven，数据库 MySQL。保留单仓库，分别位于 `apps/miniprogram`、`apps/admin`、`apps/server`。
 
-当前两端正式页面默认使用Java API：Java 21、Spring Boot 4.1.1、MySQL 8.4、Redis 7。论坛、评论、点赞、私信、公告、举报、意见反馈、内测及管理操作和配置持久化到服务端；搜索历史和自填学号仅保存在小程序本机。自填资料不代表学校或平台认证。
+当前两端正式页面默认使用Java API：Java 21、Spring Boot 4.1.1、MySQL 8.4、Redis 7。论坛、评论、点赞、私信、公告、举报、意见反馈及管理操作和配置持久化到服务端；搜索历史和自填学号仅保存在小程序本机。自填资料不代表学校或平台认证。
 
 先依照[后端环境报告](docs/backend/06-day1-foundation.md)与[认证报告](docs/backend/07-day2-authentication.md)配置环境变量并启动Java服务。当前前端开发地址为`http://127.0.0.1:18081`。密钥不写入仓库，`.env.example`不会自动加载。
 
@@ -32,3 +43,7 @@
 **当前状态**：11 个本地提交（最新 `bd4bf88`），工作区干净，仓库**无 remote**。端口四方已统一到 `18081`（`backend/config.ts` / `application.yml` / `vite.config.ts` / `start-backend-dev.ps1`）。前端 `npm run check` 260 条全绿；后端单测 ~130 条（`mvn test`，不需 Docker），集成测试 ~160 条（`mvn -Pdb-integration verify`，需 Docker）。
 
 **⚠️ 后端启动至今未在本机验证成功**：缺 pwsh 7.4、隔离 MySQL 13306 未运行、Redis 16379 未运行、`XINKELINK_JWT_SECRET_BASE64` 未设置。接手后第一件事是补齐这些环境并跑通 `/api/v1/health`。
+
+## 2026-11-18 Link AI 第一版
+
+学校规章知识库问答、自然语言公开查帖及账号会话历史已实现；后台支持资料提取、校对与版本发布。真实模型与隔离联调、最终完整回归及配置见 [AI 第一版说明](docs/backend/23-link-ai-v1.md) 和 [最新交接](docs/project-handover.md)。代码留工作区，未部署生产；学校真实资料仍须管理员确认发布。

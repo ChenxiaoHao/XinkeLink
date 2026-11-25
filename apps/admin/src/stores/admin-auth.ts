@@ -19,18 +19,30 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
     const account = accountInput.trim()
     if (!account || !password.trim()) { loginError.value = '请输入管理员账号和密码'; return false }
     loginError.value = ''
+    const login = adminHttp.login(account, password)
+    const generation = adminHttp.sessionGeneration
     try {
-      await adminHttp.login(account, password)
-      administrator.value = await adminHttp.request<AdminMe>('/me')
+      await login
+      if (generation !== adminHttp.sessionGeneration) return false
+      const current = await adminHttp.request<AdminMe>('/me')
+      if (generation !== adminHttp.sessionGeneration) return false
+      administrator.value = current
       try {
         if (remember) globalThis.localStorage?.setItem(REMEMBERED_ACCOUNT_KEY, account)
         else globalThis.localStorage?.removeItem(REMEMBERED_ACCOUNT_KEY)
       } catch { /* Remembering an account is optional and never changes authentication. */ }
       rememberedAccount.value = remember ? account : ''
       return true
-    } catch (error) { adminHttp.clear(); loginError.value = errorMessage(error); return false }
+    } catch (error) {
+      if (generation === adminHttp.sessionGeneration) { adminHttp.clear(); loginError.value = errorMessage(error) }
+      return false
+    }
   }
-  async function signOut() { try { await adminHttp.logout() } catch (error) { loginError.value = errorMessage(error) } }
+  async function signOut() {
+    const logout = adminHttp.logout()
+    const generation = adminHttp.sessionGeneration
+    try { await logout } catch (error) { if (generation === adminHttp.sessionGeneration) loginError.value = errorMessage(error) }
+  }
   const restoreSession = () => adminHttp.restore()
   function clearLoginError() { loginError.value = '' }
   return { isAuthenticated, rememberedAccount, loginError, currentAccount, displayName, administrator, signIn, signOut, restoreSession, clearLoginError }

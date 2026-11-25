@@ -49,7 +49,11 @@ class DatabaseMigrationIT {
             "xl_conversation", "xl_conversation_member", "xl_message",
             "xl_report", "xl_moderation_action", "xl_announcement", "xl_notification_task",
             "xl_user_notification", "xl_audit_log", "xl_system_setting", "xl_image_asset",
-            "xl_media_ref", "xl_user_activity_day", "xl_beta_stage", "xl_beta_code", "xl_feedback");
+            "xl_media_ref", "xl_user_activity_day", "xl_beta_stage", "xl_beta_code", "xl_feedback",
+            "xl_notification_stream", "xl_notification_outbox", "xl_notification_inbox", "xl_notification_failure",
+            "xl_view_receipt", "xl_view_event", "xl_view_daily", "xl_view_visitor_day", "xl_view_projection", "xl_view_failure",
+            "xl_lucky_bag", "xl_lucky_display", "xl_lucky_entry", "xl_lucky_result", "xl_lucky_claim", "xl_lucky_operation", "xl_ai_knowledge", "xl_ai_knowledge_version", "xl_ai_knowledge_chunk", "xl_ai_knowledge_index", "xl_ai_session", "xl_ai_request",
+            "xl_ai_runtime", "xl_ai_usage", "xl_ai_reindexed_vector");
 
     @Autowired
     private JdbcTemplate jdbc;
@@ -77,16 +81,59 @@ class DatabaseMigrationIT {
                 WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE'
                   AND LEFT(table_name, 3) = 'xl_'
                 """, String.class);
-        assertEquals(25, tables.size());
+        assertEquals(EXPECTED_TABLES.size(), tables.size());
         assertEquals(EXPECTED_TABLES, new HashSet<>(tables));
 
-        assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"),
+        assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"),
                 Arrays.stream(flyway.info().applied()).map(info -> info.getVersion().getVersion()).toList());
-        assertEquals(9, jdbc.queryForObject(
+        assertEquals(20, jdbc.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1", Integer.class));
         assertDoesNotThrow(flyway::validate);
         assertEquals(0, flyway.migrate().migrationsExecuted);
         assertDoesNotThrow(flyway::validate);
+    }
+
+    @Test
+    @Transactional
+    @Rollback
+    void opensExistingBetaStageWhilePreservingHistoricalCodeBindings() throws SQLException {
+        jdbc.update("INSERT INTO xl_beta_stage(id,phase,initialized,version) VALUES(1,'beta',1,7) ON DUPLICATE KEY UPDATE phase='beta',initialized=1,version=7");
+        long user=insertUser();
+        String code=UUID.randomUUID().toString().substring(0,16);
+        jdbc.update("INSERT INTO xl_beta_code(code,user_id,used_at) VALUES(?,?,UTC_TIMESTAMP(3))",code,user);
+        var migration=new org.springframework.core.io.ClassPathResource("db/migration/V11__open_access.sql");
+        var connection=org.springframework.jdbc.datasource.DataSourceUtils.getConnection(jdbc.getDataSource());
+        org.springframework.jdbc.datasource.init.ScriptUtils.executeSqlScript(connection,migration);
+        assertEquals("open",jdbc.queryForObject("SELECT phase FROM xl_beta_stage WHERE id=1",String.class));
+        assertEquals(8L,jdbc.queryForObject("SELECT version FROM xl_beta_stage WHERE id=1",Long.class));
+        assertEquals(1,jdbc.queryForObject("SELECT initialized FROM xl_beta_stage WHERE id=1",Integer.class));
+        assertEquals(user,jdbc.queryForObject("SELECT user_id FROM xl_beta_code WHERE code=?",Long.class,code));
+        org.springframework.jdbc.datasource.init.ScriptUtils.executeSqlScript(connection,migration);
+        assertEquals(8L,jdbc.queryForObject("SELECT version FROM xl_beta_stage WHERE id=1",Long.class));
+    }
+
+    @Test
+    @Transactional
+    @Rollback
+    void retiresPrizeNoticesWithoutDeletingHistoryOrHidingOtherNotices() {
+        long recipient = insertUser();
+        long activity = insertLuckyBag(insertAdmin());
+        jdbc.update("""
+                INSERT INTO xl_user_notification(recipient_id,event_key,type,event_kind,target_type,target_id,title,summary)
+                VALUES (?,'retired-prize','announcement','lucky_bag_win','lucky_bag',?,'历史中奖通知','历史记录'),
+                       (?,'ordinary-notice','announcement','system',NULL,NULL,'站内通知','通知正文')
+                """, recipient, activity, recipient);
+        var migration = new org.springframework.core.io.ClassPathResource("db/migration/V19__retire_lucky_bag_notifications.sql");
+        var connection = org.springframework.jdbc.datasource.DataSourceUtils.getConnection(jdbc.getDataSource());
+        org.springframework.jdbc.datasource.init.ScriptUtils.executeSqlScript(connection, migration);
+        org.springframework.jdbc.datasource.init.ScriptUtils.executeSqlScript(connection, migration);
+
+        assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM xl_user_notification WHERE recipient_id=?", Integer.class, recipient));
+        assertEquals(List.of("ordinary-notice"), jdbc.queryForList(
+                "SELECT event_key FROM xl_user_notification WHERE recipient_id=? AND active=1 AND read_at IS NULL", String.class, recipient));
+        assertEquals(1, jdbc.queryForObject(
+                "SELECT version FROM xl_user_notification WHERE recipient_id=? AND event_key='retired-prize'", Integer.class, recipient));
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM xl_lucky_bag WHERE id=?", Integer.class, activity));
     }
 
     @Test
@@ -114,6 +161,156 @@ class DatabaseMigrationIT {
         assertMysqlError(1142, () -> jdbc.update(
                 "UPDATE xl_audit_log SET target_count = target_count WHERE 1 = 0"));
         assertMysqlError(1142, () -> jdbc.update("DELETE FROM xl_audit_log WHERE 1 = 0"));
+    }
+
+    @Test
+    void statisticsEvidenceHasOnlyTheNecessaryRuntimeWritePrivileges() {
+        for (String table : List.of("xl_view_event", "xl_view_visitor_day")) {
+            assertMysqlError(1142, () -> jdbc.update("UPDATE " + table + " SET post_id=post_id WHERE 1=0"));
+        }
+        for (String table : List.of("xl_view_receipt", "xl_view_event", "xl_view_daily", "xl_view_visitor_day", "xl_view_projection", "xl_view_failure")) {
+            assertMysqlError(1142, () -> jdbc.update("DELETE FROM " + table + " WHERE 1=0"));
+        }
+    }
+
+    @Test
+    void luckyBagEvidenceIsAppendOnlyAndRuntimeCannotDeleteAnyLuckyBagHistory() {
+        for (String table : List.of("xl_lucky_entry", "xl_lucky_result", "xl_lucky_operation")) {
+            assertMysqlError(1142, () -> jdbc.update("UPDATE " + table + " SET activity_id=activity_id WHERE 1=0"));
+        }
+        for (String table : List.of("xl_lucky_bag", "xl_lucky_display", "xl_lucky_entry", "xl_lucky_result", "xl_lucky_claim", "xl_lucky_operation")) {
+            assertMysqlError(1142, () -> jdbc.update("DELETE FROM " + table + " WHERE 1=0"));
+        }
+        for (String table : List.of("xl_lucky_bag", "xl_lucky_display", "xl_lucky_claim")) {
+            assertEquals(0, jdbc.update("UPDATE " + table + " SET id=id WHERE 1=0"));
+        }
+    }
+
+    @Test
+    void aiArchivesAreAppendOnlyAndOnlyRequestHistoryCanBeDeleted() {
+        for (String table : List.of("xl_ai_knowledge_version", "xl_ai_knowledge_chunk")) {
+            assertMysqlError(1142, () -> jdbc.update("UPDATE " + table + " SET id=id WHERE 1=0"));
+        }
+        for (String table : List.of("xl_ai_knowledge", "xl_ai_knowledge_version", "xl_ai_knowledge_chunk", "xl_ai_knowledge_index", "xl_ai_session")) {
+            assertMysqlError(1142, () -> jdbc.update("DELETE FROM " + table + " WHERE 1=0"));
+        }
+        assertEquals(0, jdbc.update("DELETE FROM xl_ai_request WHERE 1=0"));
+    }
+
+    @Test
+    void luckyBagUniqueKeysAndDueScanIndexesUseTheExactColumnsAndOrder() {
+        assertIndex("xl_lucky_entry", "uq_lucky_entry_activity_user", true, "activity_id,user_id");
+        assertIndex("xl_lucky_result", "PRIMARY", true, "activity_id");
+        assertIndex("xl_lucky_result", "uq_lucky_result_winner", true, "activity_id,winner_user_id");
+        assertIndex("xl_lucky_claim", "uq_lucky_claim_activity", true, "activity_id");
+        assertIndex("xl_lucky_claim", "uq_lucky_claim_code", true, "code");
+        assertIndex("xl_lucky_bag", "idx_lucky_bag_due", false, "status,draw_at,id");
+        assertIndex("xl_lucky_entry", "idx_lucky_entry_draw", false, "activity_id,id");
+        assertIndex("xl_lucky_operation", "idx_lucky_operation_activity", false, "activity_id,id");
+        assertEquals(Set.of("fk_lucky_display_activity", "fk_lucky_entry_activity", "fk_lucky_result_activity",
+                "fk_lucky_claim_result", "fk_lucky_claim_winner", "fk_lucky_operation_activity", "fk_lucky_operation_claim"),
+                new HashSet<>(jdbc.queryForList("""
+                        SELECT constraint_name FROM information_schema.referential_constraints
+                        WHERE constraint_schema=DATABASE() AND table_name LIKE 'xl_lucky_%' AND delete_rule='RESTRICT'
+                        """, String.class)));
+        assertEquals("ascii_bin", jdbc.queryForObject("""
+                SELECT collation_name FROM information_schema.columns
+                WHERE table_schema=DATABASE() AND table_name='xl_lucky_claim' AND column_name='code'
+                """, String.class));
+        assertEquals(32L, jdbc.queryForObject("""
+                SELECT character_maximum_length FROM information_schema.columns
+                WHERE table_schema=DATABASE() AND table_name='xl_lucky_claim' AND column_name='code'
+                """, Long.class));
+        for (String constraint : List.of("ck_lucky_display_singleton", "ck_lucky_bag_status", "ck_lucky_bag_prize",
+                "ck_lucky_claim_status", "ck_lucky_claim_lifecycle", "ck_lucky_result_participants")) {
+            assertEquals("YES", jdbc.queryForObject("""
+                    SELECT enforced FROM information_schema.table_constraints
+                    WHERE constraint_schema=DATABASE() AND constraint_name=? AND constraint_type='CHECK'
+                    """, String.class, constraint), constraint);
+        }
+    }
+
+    @Test
+    @Transactional
+    @Rollback
+    void luckyBagParticipationAndResultsRemainUniqueAndRequireAConsistentWinner() {
+        long admin = insertAdmin(), user = insertUser();
+        long activity = insertLuckyBag(admin), otherActivity = insertLuckyBag(admin);
+        assertEquals(1, jdbc.update("INSERT INTO xl_lucky_entry(activity_id,user_id) VALUES(?,?)", activity, user));
+        assertMysqlError(1062, () -> jdbc.update("INSERT INTO xl_lucky_entry(activity_id,user_id) VALUES(?,?)", activity, user));
+        assertEquals(1, jdbc.update("INSERT INTO xl_lucky_entry(activity_id,user_id) VALUES(?,?)", otherActivity, user));
+        assertEquals(1, insertLuckyResult(activity, null, 0));
+        assertMysqlError(1062, () -> insertLuckyResult(activity, null, 0));
+        assertMysqlError(3819, () -> insertLuckyResult(otherActivity, null, 1));
+        assertMysqlError(3819, () -> insertLuckyResult(otherActivity, user, 0));
+        assertMysqlError(3819, () -> jdbc.update("""
+                INSERT INTO xl_lucky_result(activity_id,winner_user_id,participant_count,scheduled_at,drawn_at,algorithm)
+                VALUES(?,?,1,'2026-11-17 12:00:00.001','2026-11-17 12:00:00.000','secure-random-v1')
+                """, otherActivity, user));
+        assertEquals(1, insertLuckyResult(otherActivity, user, 1));
+    }
+
+    @Test
+    @Transactional
+    @Rollback
+    void luckyBagSingletonFixedPrizeAndCancellationReasonAreConstrained() {
+        long activity = insertLuckyBag(insertAdmin());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM xl_lucky_display WHERE id=1", Integer.class));
+        assertEquals(1, jdbc.update("UPDATE xl_lucky_display SET activity_id=? WHERE id=1", activity));
+        assertEquals(1, jdbc.update("UPDATE xl_lucky_display SET activity_id=NULL WHERE id=1"));
+        assertMysqlError(1452, () -> jdbc.update("UPDATE xl_lucky_display SET activity_id=? WHERE id=1", Long.MAX_VALUE));
+        assertMysqlError(3819, () -> jdbc.update("INSERT INTO xl_lucky_display(id,activity_id) VALUES(2,NULL)"));
+        assertMysqlError(3819, () -> jdbc.update("UPDATE xl_lucky_bag SET prize_cents=999 WHERE id=?", activity));
+        assertMysqlError(3819, () -> jdbc.update("UPDATE xl_lucky_bag SET status='unknown' WHERE id=?", activity));
+        assertMysqlError(3819, () -> jdbc.update("UPDATE xl_lucky_bag SET status='cancelled',cancel_reason=NULL WHERE id=?", activity));
+        assertMysqlError(3819, () -> jdbc.update("UPDATE xl_lucky_bag SET status='cancelled',cancel_reason=' ' WHERE id=?", activity));
+        assertEquals(1, jdbc.update("UPDATE xl_lucky_bag SET status='cancelled',cancel_reason='数据库回滚测试取消' WHERE id=?", activity));
+    }
+
+    @Test
+    @Transactional
+    @Rollback
+    void luckyClaimsRequireUniqueActivityAndCodeAndCompleteIssuingAndPaidMetadata() {
+        long admin = insertAdmin(), user = insertUser();
+        long activity = insertLuckyBag(admin), otherActivity = insertLuckyBag(admin);
+        insertLuckyResult(activity, user, 1);
+        insertLuckyResult(otherActivity, user, 1);
+        String code = UUID.randomUUID().toString().replace("-", "").toUpperCase(Locale.ROOT);
+        long nonWinner = insertUser();
+        assertMysqlError(1452, () -> jdbc.update("INSERT INTO xl_lucky_claim(activity_id,user_id,code) VALUES(?,?,?)",
+                otherActivity, nonWinner, code));
+        long claim = insertId("INSERT INTO xl_lucky_claim(activity_id,user_id,code) VALUES(?,?,?)", activity, user, code);
+        assertMysqlError(1062, () -> jdbc.update("INSERT INTO xl_lucky_claim(activity_id,user_id,code) VALUES(?,?,?)", activity, user, "F".repeat(32)));
+        assertMysqlError(1062, () -> jdbc.update("INSERT INTO xl_lucky_claim(activity_id,user_id,code) VALUES(?,?,?)", otherActivity, user, code));
+        assertMysqlError(3819, () -> jdbc.update("INSERT INTO xl_lucky_claim(activity_id,user_id,code) VALUES(?,?,?)", otherActivity, user, "G".repeat(32)));
+        assertMysqlError(3819, () -> jdbc.update("UPDATE xl_lucky_claim SET status='unknown' WHERE id=?", claim));
+        assertMysqlError(3819, () -> jdbc.update("UPDATE xl_lucky_claim SET status='issuing' WHERE id=?", claim));
+        assertMysqlError(3819, () -> jdbc.update("UPDATE xl_lucky_claim SET started_by=? WHERE id=?", admin, claim));
+        assertEquals(1, jdbc.update("""
+                UPDATE xl_lucky_claim SET status='issuing',started_by=?,started_at=UTC_TIMESTAMP(3),
+                    start_operation_id=?,version=version+1 WHERE id=?
+                """, admin, UUID.randomUUID().toString(), claim));
+        assertMysqlError(3819, () -> jdbc.update("UPDATE xl_lucky_claim SET status='paid' WHERE id=?", claim));
+        assertEquals(1, jdbc.update("""
+                UPDATE xl_lucky_claim SET status='paid',paid_by=?,paid_at=UTC_TIMESTAMP(3),
+                    paid_operation_id=?,version=version+1 WHERE id=?
+                """, admin, UUID.randomUUID().toString(), claim));
+        assertEquals(2, jdbc.queryForObject("SELECT version FROM xl_lucky_claim WHERE id=?", Integer.class, claim));
+    }
+
+    @Test
+    @Transactional
+    @Rollback
+    void statisticsUniqueEventsDailyMembershipAndPublisherLeasesAreConstrained() {
+        String event = UUID.randomUUID().toString(), digest = "a".repeat(64), visitor = "b".repeat(64);
+        jdbc.update("INSERT INTO xl_view_event(event_id,digest,post_id,visitor_key,occurred_at) VALUES(?,?,1,?,UTC_TIMESTAMP(3))", event, digest, visitor);
+        assertMysqlError(1062, () -> jdbc.update("INSERT INTO xl_view_event(event_id,digest,post_id,visitor_key,occurred_at) VALUES(?,?,2,?,UTC_TIMESTAMP(3))", event, digest, visitor));
+        jdbc.update("INSERT INTO xl_view_visitor_day(post_id,view_date,visitor_key) VALUES(1,'2026-11-16',?)", visitor);
+        assertMysqlError(1062, () -> jdbc.update("INSERT INTO xl_view_visitor_day(post_id,view_date,visitor_key) VALUES(1,'2026-11-16',?)", visitor));
+        jdbc.update("INSERT INTO xl_view_visitor_day(post_id,view_date,visitor_key) VALUES(1,'2026-11-17',?)", visitor);
+        assertMysqlError(3819, () -> jdbc.update("INSERT INTO xl_view_receipt(event_id,digest,post_id,visitor_key,occurred_at,payload,state) VALUES(?,?,1,?,UTC_TIMESTAMP(3),'{}','LEASED')", event, digest, visitor));
+        assertMysqlError(3819, () -> jdbc.update("INSERT INTO xl_view_projection(id,generation) VALUES(2,0)"));
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema=DATABASE() AND table_name LIKE 'xl_view_%'", Integer.class));
     }
 
     @Test
@@ -192,6 +389,36 @@ class DatabaseMigrationIT {
 
     private long insertUser() {
         return insertUser("it-database", "open-" + UUID.randomUUID());
+    }
+
+    private void assertIndex(String table, String name, boolean unique, String columns) {
+        assertEquals(columns, jdbc.queryForObject("""
+                SELECT GROUP_CONCAT(column_name ORDER BY seq_in_index SEPARATOR ',')
+                FROM information_schema.statistics
+                WHERE table_schema=DATABASE() AND table_name=? AND index_name=?
+                """, String.class, table, name), table + "." + name);
+        assertEquals(unique ? 0 : 1, jdbc.queryForObject("""
+                SELECT MIN(non_unique) FROM information_schema.statistics
+                WHERE table_schema=DATABASE() AND table_name=? AND index_name=?
+                """, Integer.class, table, name), table + "." + name);
+        assertEquals(0, jdbc.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.statistics
+                WHERE table_schema=DATABASE() AND table_name=? AND index_name=? AND sub_part IS NOT NULL
+                """, Integer.class, table, name), "Deduplication and scans must index complete values");
+    }
+
+    private long insertLuckyBag(long admin) {
+        return insertId("""
+                INSERT INTO xl_lucky_bag(name,draw_at,instructions,wechat,created_by)
+                VALUES('数据库回滚测试福袋',UTC_TIMESTAMP(3),'数据库回滚测试领取说明','fixture-wechat',?)
+                """, admin);
+    }
+
+    private int insertLuckyResult(long activity, Long winner, long participants) {
+        return jdbc.update("""
+                INSERT INTO xl_lucky_result(activity_id,winner_user_id,participant_count,scheduled_at,drawn_at,algorithm)
+                VALUES(?,?,?,UTC_TIMESTAMP(3),UTC_TIMESTAMP(3),'secure-random-v1')
+                """, activity, winner, participants);
     }
 
     private long insertUser(String appId, String openId) {

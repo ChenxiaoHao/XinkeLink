@@ -1,8 +1,6 @@
 package cn.xinkelink.media;
 
 import cn.xinkelink.auth.AuthPrincipal;
-import cn.xinkelink.beta.BetaService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import cn.xinkelink.common.api.BusinessException;
 import cn.xinkelink.common.api.ErrorCode;
@@ -10,6 +8,8 @@ import cn.xinkelink.media.persistence.MediaMapper;
 import cn.xinkelink.storage.ImageStorage;
 import cn.xinkelink.storage.ImageUpload;
 import cn.xinkelink.storage.StoredImage;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -20,9 +20,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
@@ -36,19 +38,25 @@ public class MediaService {
     private final MediaMapper mapper;
     private final ImageStorage storage;
     private final MediaContentReader reader;
+    private final LoadingCache<String, byte[]> avatarBytes;
     private final MediaGrant grants;
     private final Clock clock;
     private final TransactionTemplate transactions;
-    private BetaService beta;
-    @Autowired public void betaAccess(BetaService beta){this.beta=beta;}
     public MediaService(MediaMapper mapper, ImageStorage storage, MediaContentReader reader, MediaGrant grants,
                         Clock clock, PlatformTransactionManager transactionManager) {
         this.mapper = mapper; this.storage = storage; this.reader = reader; this.grants = grants;
         this.clock = clock; this.transactions = new TransactionTemplate(transactionManager);
+        this.avatarBytes = Caffeine.newBuilder()
+                .maximumWeight(16 * 1024 * 1024)
+                .weigher((String key, byte[] bytes) -> Math.max(bytes.length, 1024))
+                .expireAfterAccess(Duration.ofMinutes(10))
+                .build(key -> {
+                    try { return reader.read(key); }
+                    catch (IOException exception) { throw new UncheckedIOException(exception); }
+                });
     }
 
     public Map<String, Object> upload(AuthPrincipal owner, String purpose, ImageUpload upload) {
-        if(beta!=null&&!"avatar".equals(purpose))beta.requireAccess(owner);
         if(!supported(purpose)&&!"report".equals(purpose)&&!"avatar".equals(purpose))throw new BusinessException(ErrorCode.UNSUPPORTED_TARGET);
         requireSession(owner);
         StoredImage stored = null;
@@ -176,20 +184,16 @@ public class MediaService {
             if(!supported(type)&&!type.equals("user_avatar"))forbidden();
             Parent parent=parents(type,List.of(claim.parentId())).get(claim.parentId());
             if(parent==null||parent.deleted()||mapper.refs(imageId).stream().noneMatch(ref->ref.ownerType().equals(type)&&ref.ownerId()==claim.parentId()))forbidden();
-            try{return reader.read(asset.storageKey());}catch(IOException exception){throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE);}
+            return readContent(asset, "user_avatar".equals(type));
         }
         if(reportType(claim.parentType())){
             AuthPrincipal admin=new AuthPrincipal(claim.userId(),claim.sessionId(),"admin");
             requireAdminSession(admin);
             if(mapper.reportExists(claim.parentId())!=1||mapper.refs(imageId).stream().noneMatch(ref->ref.ownerType().equals(claim.parentType())&&ref.ownerId()==claim.parentId()))forbidden();
-            try{return reader.read(asset.storageKey());}catch(IOException exception){throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE);}
+            return readContent(asset, false);
         }
         AuthPrincipal viewer = claim.userId() == 0 ? null : new AuthPrincipal(claim.userId(), claim.sessionId(), "user");
         if (viewer != null) requireSession(viewer);
-        // An open-phase anonymous grant must stop working when beta is re-enabled.
-        boolean ownAvatar=viewer!=null&&"avatar".equals(asset.purpose())&&viewer.subjectId()==asset.ownerUserId()
-                &&("user_avatar".equals(claim.parentType())||"temporary".equals(claim.parentType()));
-        if(beta!=null&&!ownAvatar)beta.requireAccess(viewer);
         if (claim.parentType().equals("temporary")) {
             if (viewer == null || viewer.subjectId() != asset.ownerUserId() || !asset.state().equals("temporary")
                     || asset.expiresAt() == null || !asset.expiresAt().isAfter(clock.instant())) forbidden();
@@ -199,8 +203,16 @@ public class MediaService {
             Parent parent = parents(claim.parentType(), List.of(claim.parentId())).get(claim.parentId());
             if (!currentRef || !canRead(parent, viewer)) forbidden();
         }
-        try { return reader.read(asset.storageKey()); }
-        catch (IOException exception) { throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE); }
+        return readContent(asset, "user_avatar".equals(claim.parentType()));
+    }
+
+    private byte[] readContent(Asset asset, boolean cacheAvatar) {
+        try {
+            // Requests reach this cache only after validating their own grant and current media reference.
+            return cacheAvatar ? avatarBytes.get(asset.storageKey()) : reader.read(asset.storageKey());
+        } catch (IOException | UncheckedIOException exception) {
+            throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE);
+        }
     }
 
     public void delete(long imageId, AuthPrincipal owner) {
@@ -214,16 +226,14 @@ public class MediaService {
         });
         try { storage.delete(Objects.requireNonNull(asset).storageKey()); }
         catch (IOException exception) { throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE); }
+        avatarBytes.invalidate(asset.storageKey());
         transactions.executeWithoutResult(status -> mapper.state(imageId, "deleted"));
     }
 
     private Map<String, Object> access(Asset asset, Parent parent, String type, AuthPrincipal viewer) {
         Instant expiry = Instant.ofEpochSecond(clock.instant().getEpochSecond() + 60);
-        boolean publicAccess = parent != null && parent.publicVisible()&&!type.startsWith("admin_")&&(beta==null||!beta.isBeta());
-        if(!publicAccess&&viewer==null){
-            if(beta!=null)beta.requireAccess(null);
-            forbidden();
-        }
+        boolean publicAccess = parent != null && parent.publicVisible() && !type.startsWith("admin_");
+        if (!publicAccess && viewer == null) forbidden();
         long uid = publicAccess ? 0 : viewer.subjectId(), sid = publicAccess ? 0 : viewer.sessionId();
         String token = grants.issue(new MediaGrant.Claim(asset.id(), expiry, type, parent == null ? 0 : parent.id(), uid, sid));
         return Map.of("imageId", Long.toString(asset.id()), "url", "/api/v1/images/" + asset.id() + "/content?grant=" + token,

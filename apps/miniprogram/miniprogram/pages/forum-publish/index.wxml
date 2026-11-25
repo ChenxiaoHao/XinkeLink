@@ -1,5 +1,5 @@
-<view class="compose-header" style="padding-top:{{headerTop}}px;">
-  <view class="compose-header-bar">
+<view class="compose-header" style="padding-top:{{statusHeight}}px;">
+  <view class="compose-header-bar" style="padding-right:{{rightSpace + 8}}px;">
     <button class="compose-cancel" bindtap="onCancelTap" disabled="{{publishing}}">取消</button>
     <button class="compose-publish {{form.content.length && !publishing ? '' : 'compose-publish--idle'}}" bindtap="onPublishTap" loading="{{publishing}}">{{editId ? '保存' : '发布'}}</button>
   </view>
@@ -24,18 +24,16 @@
   </block>
 </view>
 
-<!-- 底部 = 回复范围行 + 工具条（对齐 X compose 的底部布局）。 -->
+<!-- 直接展示当前标签与身份；编辑时身份保持原帖子设置。 -->
 <view class="compose-bottom" style="bottom:{{keyboardHeight}}px; padding-bottom:{{keyboardHeight ? '8px' : 'calc(8px + env(safe-area-inset-bottom))'}};">
-  <button class="compose-scope" bindtap="onAnonymousTap" hover-class="none" aria-label="切换匿名发布">
-    <image src="/assets/icons/x-users-ink.png" aria-hidden="true"/>
-    <text>{{form.anonymous ? '匿名发布 · 仅显示「匿名同学」' : '所有人都可以回复'}}</text>
-  </button>
+  <view class="compose-options">
+    <picker class="compose-category-picker" range="{{categories}}" range-key="label" value="{{categoryIndex}}" disabled="{{publishing || loadFailed}}" bindchange="onCategoryPickerChange">
+      <view class="compose-option" aria-label="当前标签：{{categoryLabel}}，点击切换"><image class="compose-option-icon" src="/assets/icons/x-hash-ink.png" /><text class="compose-category-label">{{categoryLabel}}</text><image class="compose-option-chevron" src="/assets/icons/x-chevron-down-ink.png" /></view>
+    </picker>
+    <button class="compose-option compose-identity" bindtap="onAnonymousTap" disabled="{{publishing || loadFailed || editId}}" aria-label="{{editId ? '编辑时不能改变发布身份' : form.anonymous ? '当前匿名发布，点击切换为本人发布' : '当前本人发布，点击切换为匿名发布'}}"><image class="compose-option-icon" src="/assets/icons/x-user-round-ink.png" /><text class="compose-identity-label">{{form.anonymous ? '匿名发布' : '以 ' + (selfNickname || '本人') + ' 发布'}}</text><image wx:if="{{!editId}}" class="compose-option-chevron" src="/assets/icons/x-chevron-down-ink.png" /></button>
+  </view>
   <view class="compose-toolbar">
     <button class="compose-tool" bindtap="onAddImages" disabled="{{publishing}}" aria-label="添加图片"><image src="/assets/icons/x-image-ink.png" /></button>
-    <picker class="compose-tool-picker" range="{{categories}}" range-key="label" value="{{categoryIndex}}" disabled="{{publishing}}" bindchange="onCategoryPickerChange">
-      <view class="compose-tool" aria-label="选择板块"><image src="/assets/icons/x-hash-ink.png" /></view>
-    </picker>
-    <button class="compose-tool {{form.anonymous ? 'compose-tool--on' : ''}}" bindtap="onAnonymousTap" disabled="{{publishing}}" aria-label="切换匿名发布"><image src="/assets/icons/x-user-round-ink.png" /></button>
     <text class="compose-count">{{form.content.length}}/500</text>
   </view>
 </view>

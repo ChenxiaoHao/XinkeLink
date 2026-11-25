@@ -49,6 +49,18 @@ class ForumServiceIT {
     }
 
     @Test
+    void createsEditsAndFiltersAllForumCategories() {
+        for(String category:List.of("campus","lost_found","study","help","secondhand","complain","buddy")) {
+            var post=forum.create(new ForumModels.CreatePost("category regression",category,List.of(),false,UUID.randomUUID().toString()),author);
+            long id=Long.parseLong(post.get("id").toString());
+            assertEquals(category,forum.detail(id,author).get("category"));
+            assertTrue(forum.list(category,"latest",null,null,50,author).items().stream().anyMatch(row->row.get("id").equals(post.get("id"))));
+            forum.update(id,new ForumModels.UpdatePost(null,"campus",null,0L),author);
+            assertEquals(category,forum.update(id,new ForumModels.UpdatePost(null,category,null,1L),author).get("category"));
+        }
+    }
+
+    @Test
     void anonymousPostAndAuthorRepliesNeverExposeTheRealIdentity() {
         long post = create(true);
         Map<String, Object> root = comment(post, reader, null, "一级");

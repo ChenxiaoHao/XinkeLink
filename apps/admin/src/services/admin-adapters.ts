@@ -3,7 +3,7 @@ import { rememberAdminImage } from './admin-images'
 
 // These projections isolate the existing screen models from the documented REST DTOs.
 export type Wire = Record<string, any>
-export const postCategories: Record<string, PostCategory> = { campus: '校园生活', lost_found: '失物招领', study: '学习交流', help: '校园互助' }
+export const postCategories: Record<string, PostCategory> = { campus: '校园生活', lost_found: '失物招领', study: '学习交流', help: '校园互助', secondhand: '二手闲置', complain: '吐槽', buddy: '找搭子' }
 export const imageUrl = (image: Wire | null | undefined): string => rememberAdminImage(image)
 const images = (values: Wire[] | undefined): string[] => (values ?? []).map(imageUrl).filter(Boolean)
 const personName = (person: Wire | undefined) => person?.name ?? person?.nickname ?? person?.displayName ?? ''

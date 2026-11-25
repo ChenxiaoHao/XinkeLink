@@ -82,7 +82,7 @@ registerPage(wx, Page, 'forum')({
     }
   },
   onLikePost(event: WechatMiniprogram.CustomEvent<{ id: string }>) { this.saveInteraction(event.detail.id, 'liked') },
-  onRepostPost(event: WechatMiniprogram.CustomEvent<{ id: string }>) { this.saveInteraction(event.detail.id, 'reposted') },
+  onRepostPost() { wx.showToast({ title: '转发功能尚未开放', icon: 'none' }) },
   onCollectPost(event: WechatMiniprogram.CustomEvent<{ id: string }>) { this.saveInteraction(event.detail.id, 'collected') },
   onOpenPost(event: WechatMiniprogram.CustomEvent<{ id: string }>) {
     if (!this._posts.some((post: MockPost) => post.id === event.detail.id)) return
@@ -91,7 +91,6 @@ registerPage(wx, Page, 'forum')({
   onSearchTap() {
     this.setData({ searchKeyword: '' })
     this.replaceFeed()
-    wx.setStorageSync('xinkelink.search.entry', 'posts')
     wx.switchTab({ url: '/pages/search/index', fail() { wx.showToast({ title: '搜索暂时无法打开，请重试', icon: 'none' }) } })
   },
   onForumFilterTap() {

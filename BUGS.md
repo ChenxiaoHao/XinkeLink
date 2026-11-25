@@ -1,3 +1,30 @@
+> **2026-11-14缓存批次补记**：下方B01—B11属于上一批既有未提交成果。本轮新增公共计数缓存，未重做该批修复；原“V10/V11待真实迁移”已更新为备份后成功应用。缓存一致性边界及本轮真实验证见[最新交接记录](docs/project-handover.md)。
+
+# 2026-11-14 业务修复状态（基线 7fc1af4）
+
+本节取代下方历史只读审查中的“当前状态”。工作区接手时干净；本轮只修业务，不改布局，不开发交易或真实转发。以下“已修”指源码与自动回归，真实服务验证边界见交接文档。
+
+| 编号 | 状态 | 根因 → 行为及主要文件（小程序路径相对 miniprogram/） |
+|---|---|---|
+| B01 | 已修 | fixture未注入live守卫。`pages/chat-settings/index.ts`加载、reload、历史、设置、清空、举报入口先校验；访客清空展示，不读正文、不写设置/历史；弹窗后复验。live桥接增加身份校验及迟到响应防护。 |
+| B02 | 已修 | 私人页先读数据再判身份。`pages/profile`、`my-posts`、`my-collections`先清空访客私人数据，共用WXML隐藏管理区；抽屉及实际操作有守卫；fixture profile深链转公开user-home，公开内容保持可读。 |
+| B03 | 已修 | 重复登录判定catch→true/旧状态。`components/forum-post-card`、`page-header`、`app-shell`、`pages/contact/controller.ts`及相关入口使用`getViewerRole()`，不确定按guest；本人已登录→profile，其余→公开主页。 |
+| B04 | 已修 | `features/profile/repository.ts`空会话曾默认true。现默认false，测试登录身份显式设置；保留登录/退出广播与既有reLaunch规则。 |
+| B05 | 已修 | 历史/草稿原为共用无归属key。新增`features/profile/private-storage.ts`与`features/forum/drafts.ts`，guest读空/禁止写，fixture保持设备单身份，live按用户ID分区，旧无归属数据仅fixture读取；退出保留，重登恢复；editId先守卫。 |
+| B06 | 已修，待真实DB验收 | DTO、列表、后台、CHECK仍为四分类。服务端/后台支持campus/lost_found/study/help/secondhand/complain/buddy，推荐/最新仅排序；新增V10，历史study可继续编辑，二手闲置仅普通帖子分类。 |
+| B07 | 已修 | fixture举报/反馈/偏好漏登录守卫。取消或失败不落盘、不报成功；举报成功后防再次追加，失败可重试。相关`pages/report`、`feedback`、`components/app-shell`。 |
+| B08 | 已修 | 收件箱未等待login Promise便更新状态。`pages/contact/controller.ts`等待现有requireSession流程成功后刷新，取消/异常保持guest。 |
+| B09 | 已修；真实转发未实现 | 卡片、页面、fixture仓储及live service均明确未开放，零转发写入，不能退回收藏接口；原布局保留。真实转发留后续任务。 |
+| B10 | 已修 | fixture编辑可改变匿名；草稿无操作关联。匿名属性仓储防御且编辑开关无效；新建与各editId分别存草稿，仅成功清理本次草稿，取消/失败保留，退出刷新清编辑状态。 |
+| B11 | 已修 | fixture未校验结果/捕获异常；live迟到互动跨查询覆盖。当前结果校验、输入即失效、请求代次/身份复验；失败保留原状态并提示重试，分页列表不重置。 |
+| 开放准入 | 已修，待迁移生效 | 首页改forum；已有open机制沿用，服务端初始化open，V11把已有beta切open并递增版本，不删历史码/绑定。认证、封禁、限流保留。 |
+
+回归入口：`tests/privacy-page-guards.test.cjs`、`business-identity-fixes.test.cjs`、`private-draft-search.test.cjs`、`backend-pages.test.cjs`、`open-startup.test.cjs`；服务端`ForumCategoryTest`、`BetaInitializationTest`及数据库IT；后台`forum-categories.test.ts`。旧用例仅将需登录场景改为显式会话，以及更新本次明确变更的首页/转发断言；没有删除测试或跳过安全断言。
+
+下方为历史审查存档；第4项fixture授权弹层潜在死链、第5项fixture历史分页、第6项fixture搜索分页占位未扩展，均不在本轮功能范围。
+
+---
+
 # 演示模式（wx.__fixtureMode === true）只读审查报告
 
 - 日期：2026-11-13；范围：`apps/miniprogram/miniprogram/pages/` 下 17 个已注册页面（仅演示模式，不涉及后端）。

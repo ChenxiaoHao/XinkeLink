@@ -33,7 +33,7 @@ class RedisAuthRateLimiterTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"wechat,10", "admin,5", "refresh,30", "beta,5"})
+    @CsvSource({"wechat,10", "admin,5", "refresh,30"})
     void allowsTheLastRequestWithinEachOperationLimit(String operation, long limit) {
         when(redis.execute(RedisAuthRateLimiterTest.<RedisScript<Long>>script(), anyList(), eq("60")))
                 .thenReturn(limit);
@@ -42,7 +42,7 @@ class RedisAuthRateLimiterTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"wechat,11", "admin,6", "refresh,31", "beta,6"})
+    @CsvSource({"wechat,11", "admin,6", "refresh,31"})
     void rejectsTheFirstRequestBeyondEachOperationLimit(String operation, long count) {
         when(redis.execute(RedisAuthRateLimiterTest.<RedisScript<Long>>script(), anyList(), eq("60")))
                 .thenReturn(count);

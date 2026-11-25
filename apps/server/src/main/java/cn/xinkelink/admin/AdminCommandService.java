@@ -1,6 +1,7 @@
 package cn.xinkelink.admin;
 
 import cn.xinkelink.audit.AuditAction;
+import cn.xinkelink.forum.metrics.PostMetricsCache;
 import cn.xinkelink.auth.AuthPrincipal;
 import cn.xinkelink.common.api.ErrorCode;
 import cn.xinkelink.content.ContentSupport;
@@ -17,10 +18,11 @@ import static cn.xinkelink.content.ContentSupport.map;
 @Service
 @Profile("auth")
 public class AdminCommandService {
+    private final PostMetricsCache postMetrics;
     private final AdminData data;
     private final ContentSupport support;
     private final MediaService media;
-    public AdminCommandService(AdminData data,ContentSupport support,MediaService media){this.data=data;this.support=support;this.media=media;}
+    public AdminCommandService(AdminData data,ContentSupport support,MediaService media,PostMetricsCache postMetrics){this.postMetrics=postMetrics;this.data=data;this.support=support;this.media=media;}
 
     @Transactional
     @AuditAction(module="posts",action="set_status",targetType="post",fields={"status","version"})
@@ -36,6 +38,7 @@ public class AdminCommandService {
         var before=state("post",row);
         int removed=data.jdbc.update("UPDATE xl_comment SET deleted_at=UTC_TIMESTAMP(3),updated_at=UTC_TIMESTAMP(3),version=version+1 WHERE target_type='post' AND target_id=? AND deleted_at IS NULL",id);
         data.jdbc.update("UPDATE xl_post SET deleted_at=UTC_TIMESTAMP(3),updated_at=UTC_TIMESTAMP(3),version=version+1 WHERE id=?",id);media.detach("post",id);
+        postMetrics.invalidateAfterCommit(List.of(id));
         data.history("post",id,n(row,"author_id"),admin,"delete_post","管理员删除帖子",before,state("post",data.required("xl_post",id,false)));
         return map("id",Long.toString(id),"deleted",true,"changed",true,"version",n(row,"version")+1,"removedCommentCount",removed);
     }
@@ -54,6 +57,7 @@ public class AdminCommandService {
             data.jdbc.update("UPDATE xl_comment SET deleted_at=UTC_TIMESTAMP(3),updated_at=UTC_TIMESTAMP(3),version=version+1 WHERE id=?",id);
             data.history("comment",id,n(row,"author_id"),admin,"delete_comment",reason,state("comment",row),state("comment",data.required("xl_comment",id,false)));
         }
+        postMetrics.invalidateAfterCommit(affected.values().stream().filter(row -> changed.contains(n(row,"id")) && "post".equals(row.get("target_type"))).map(row -> n(row,"target_id")).distinct().toList());
         var result=result(items,rows,changed);result.put("removedReplyCount",removedReplies);result.put("removedCount",changed.size());return result;
     }
     private Map<String,Object> status(String type,AdminModels.Batch body,AuthPrincipal principal){
@@ -66,6 +70,9 @@ public class AdminCommandService {
             change=!target.equals(row.get("status"));if(change)data.jdbc.update("UPDATE xl_"+type+" SET status=?,updated_at=UTC_TIMESTAMP(3),version=version+1 WHERE id=?",target,id);
             if(change){changed.add(id);data.history(type,id,n(row,"author_id"),admin,"set_"+type+"_status",reason,state(type,row),state(type,data.required("xl_"+type,id,false)));}
         }
+        postMetrics.invalidateAfterCommit(rows.values().stream().filter(row -> changed.contains(n(row,"id")))
+                .filter(row -> type.equals("post") || "post".equals(row.get("target_type")))
+                .map(row -> type.equals("post") ? n(row,"id") : n(row,"target_id")).distinct().toList());
         return result(items,rows,changed);
     }
     private LinkedHashMap<Long,AdminModels.Item> items(AdminModels.Batch body){

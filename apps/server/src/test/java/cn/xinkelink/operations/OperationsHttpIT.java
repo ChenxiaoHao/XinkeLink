@@ -28,10 +28,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"db", "auth"})
 class OperationsHttpIT {
-    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
-    cn.xinkelink.beta.BetaService platformPhase;
-    // Business regressions run in the public phase; beta access has its own integration suite.
-    @org.junit.jupiter.api.BeforeEach void publicPlatformFixture(){org.mockito.Mockito.doReturn(false).when(platformPhase).isBeta();}
 
     @Autowired AuthService auth;
     @Autowired JdbcTemplate jdbc;

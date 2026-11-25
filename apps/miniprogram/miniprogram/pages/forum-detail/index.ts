@@ -6,21 +6,28 @@ import { commentAuthor, commentThreads, CommentThread, CommentView, visibleComme
 import { ForumPostView, PostInteraction } from '../../features/forum/types'
 import { requireLocalSession, localIdentity } from '../../features/profile/repository'
 import { avatarInitial } from '../../utils/presentation'
+import { detailVisit } from '../../features/statistics/views'
 registerPage(wx, Page, 'forum-detail')({
   data: { post: null as ForumPostView | null, loadFailed: false, comments: [] as CommentThread[],
     commentDraft: '', composerOpen: false, replyTarget: null as { id: string; name: string } | null,
-    sending: false, deleting: false, keyboardHeight: 0, selfAvatar: '', selfInitial: '我',
+    // Shared UI state: live overrides only the submission operation below.
+    sending: false, sendFailed: false, deleting: false, keyboardHeight: 0, selfAvatar: '', selfInitial: '我',
     // 回复区默认按热度排（设计稿口径），点右侧标签可切回时间序。
     commentOrder: 'hot' as 'hot' | 'time' },
   _postId: '',
+  _detailVisible:false,
+  _viewVisit:null as ReturnType<typeof detailVisit>|null,
   _expanded: [] as string[], _openedReplies: [] as string[],
   onLoad(options: Record<string, string | undefined>) {
     this._postId = options.id ?? ''
+    this._viewVisit=detailVisit(wx,this._postId)
     try { const self = localIdentity(wx); this.setData({ selfAvatar: self.avatar, selfInitial: avatarInitial(self.nickname) }) } catch { /* 头像读不到时留空占位。 */ }
     this.reload()
     if (options.reply === '1' && this.data.post) this.setData({ composerOpen: true })
   },
-  onShow() { this.reload() },
+  onShow() { this._detailVisible=true;this.reload() },
+  onHide() {this._detailVisible=false},
+  onUnload() {this._detailVisible=false},
   reload() {
     try {
       const snapshot = readForum(wx), post = snapshot.posts.find(item => item.id === this._postId)
@@ -34,6 +41,7 @@ registerPage(wx, Page, 'forum-detail')({
       this.setData({ post: post ? toPostView(post, snapshot.interactions) : null, loadFailed: false,
         comments: threads,
         replyTarget: targetExists ? this.data.replyTarget : null })
+      if(this._detailVisible&&post)this._viewVisit?.displayed(true)
     } catch { this.setData({ loadFailed: true }) }
   },
   onToggleOrder() {
@@ -47,36 +55,37 @@ registerPage(wx, Page, 'forum-detail')({
     catch { wx.showToast({ title: '操作未保存，请重试', icon: 'none' }) }
   },
   onLikeTap() { this.saveInteraction('liked') },
-  onRepostPost() { this.saveInteraction('reposted') },
+  onRepostPost() { wx.showToast({ title: '转发功能尚未开放', icon: 'none' }) },
   onCollectTap() { this.saveInteraction('collected') },
   onImageTap(event: WechatMiniprogram.TouchEvent) {
     if (this.data.post) previewForumImages(wx, this.data.post.images, Number(event.currentTarget.dataset.index))
   },
-  onOpenComposer() { if (this.data.post && !this.data.loadFailed) this.setData({ composerOpen: true }) },
+  onOpenComposer() { if (this.data.post && !this.data.loadFailed) this.setData({ composerOpen: true, sendFailed: false }) },
   onCloseComposer() { this.setData({ composerOpen: false, keyboardHeight: 0 }); wx.hideKeyboard?.() },
-  onCancelReply() { this.setData({ replyTarget: null }) },
+  onCancelReply() { this.setData({ replyTarget: null, sendFailed: false }) },
   onKeyboardHeightChange(event: WechatMiniprogram.CustomEvent<{ height: number }>) {
     this.setData({ keyboardHeight: Math.max(0, event.detail.height || 0) })
   },
-  onCommentInput(event: WechatMiniprogram.CustomEvent<{ value: string }>) { this.setData({ commentDraft: event.detail.value.slice(0, 1000) }) },
+  onCommentInput(event: WechatMiniprogram.CustomEvent<{ value: string }>) { this.setData({ commentDraft: event.detail.value.slice(0, 1000), sendFailed: false }) },
   onReplyTap(event: WechatMiniprogram.CustomEvent<{ id?: string }>) {
     const id = event.detail?.id ?? event.currentTarget.dataset.id
     try {
       const snapshot = readForum(wx), post = snapshot.posts.find(item => item.id === this._postId)
       const target = post && visibleComments(post, snapshot.commentState).find(comment => comment.id === id)
-      if (post && target) this.setData({ composerOpen: true, replyTarget: { id: target.id, name: commentAuthor(post, target).name } })
+      if (post && target) this.setData({ composerOpen: true, sendFailed: false, replyTarget: { id: target.id, name: commentAuthor(post, target).name } })
     } catch { wx.showToast({ title: '评论暂时无法读取，请重试', icon: 'none' }) }
   },
   onSubmitComment() {
     if (!requireLocalSession(wx)) return
     if (!this.data.post || this.data.sending) return
     if (!this.data.commentDraft.trim()) { wx.showToast({ title: '请先写点内容吧', icon: 'none' }); return }
+    if (this.data.commentDraft.trim().length > 1000) { wx.showToast({ title: '评论需为1至1000字', icon: 'none' }); return }
     this.setData({ sending: true })
     try {
       addForumComment(wx, this._postId, this.data.commentDraft, this.data.replyTarget?.id)
-      this.setData({ commentDraft: '', replyTarget: null, composerOpen: false, keyboardHeight: 0 })
+      this.setData({ commentDraft: '', replyTarget: null, composerOpen: false, keyboardHeight: 0, sendFailed: false })
       wx.hideKeyboard?.(); this.reload(); wx.showToast({ title: '评论已发布', icon: 'success' })
-    } catch { wx.showToast({ title: '评论未发送，请刷新后重试', icon: 'none' }) }
+    } catch { this.setData({ sendFailed: true }); wx.showToast({ title: '评论未发送，请刷新后重试', icon: 'none' }) }
     finally { this.setData({ sending: false }) }
   },
   onCommentLike(event: WechatMiniprogram.CustomEvent<{ id?: string }>) {

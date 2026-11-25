@@ -5,6 +5,8 @@ import { emptyPostDraft, persistForumImages, releaseForumImages, validatePostDra
 import { publishForumPost, readLocalPosts, updateOwnPost } from '../../features/forum/repository'
 import { FORUM_CATEGORIES, PostCategory } from '../../features/forum/types'
 import { localIdentity, requireLocalSession } from '../../features/profile/repository'
+import { getViewerRole } from '../../features/profile/viewer'
+import { readPostDraft, savePostDraft, clearPostDraft } from '../../features/forum/drafts'
 import { menuRightSpace } from '../../utils/layout'
 
 const CATEGORIES = FORUM_CATEGORIES.filter(item => item.key !== 'recommended' && item.key !== 'latest')
@@ -17,7 +19,7 @@ registerPage(wx, Page, 'forum-publish')({
     categoryIndex: DEFAULT_CATEGORY_INDEX,
     categoryLabel: CATEGORIES[DEFAULT_CATEGORY_INDEX].label,
     publishing: false, loadFailed: false, keyboardHeight: 0,
-    selfAvatar: '', statusHeight: 20, rightSpace: 104, headerTop: 66, editId: '',
+    selfAvatar: '', selfNickname: '', statusHeight: 20, rightSpace: 104, headerTop: 66, editId: '',
   },
   onLoad(options: Record<string, string | undefined> = {}) {
     try {
@@ -26,54 +28,61 @@ registerPage(wx, Page, 'forum-publish')({
       // 取消/发布整行放在胶囊下方，避免和右上角胶囊挤在一起。
       this.setData({ statusHeight, rightSpace: valid ? menuRightSpace(info.windowWidth, menu.left) : 104, headerTop: valid ? menu.bottom + 8 : statusHeight + 50 })
     } catch { /* 取不到系统几何时保持默认值。 */ }
-    try { this.setData({ selfAvatar: localIdentity(wx).avatar }) } catch { /* 头像读不到时留空占位。 */ }
-    // Link AI 的「直接发帖」把整理好的正文写进草稿，这里接着带进撰写页。
-    if (options.draft === '1') {
-      try {
-        const draft = wx.getStorageSync('xinkelink.post.draft.v1') as { content?: string } | undefined
-        if (draft && typeof draft.content === 'string') this.setData({ form: { ...this.data.form, ...draft, content: draft.content, images: [] } })
-      } catch { /* 草稿读不到时保持空表单。 */ }
-    }
-    // 演示模式：「我的帖子 → 编辑」带 editId 进来，回填原内容，避免存成一条重复的新帖。
+    this.setData({ editId: options.editId || '' })
+    if (getViewerRole(wx) === 'guest') { this.setData({ form: emptyPostDraft(), selfAvatar: '', selfNickname: '', loadFailed: true }); return }
+    try { const self = localIdentity(wx); this.setData({ selfAvatar: self.avatar, selfNickname: self.nickname }) } catch { /* 资料读不到时显示本人。 */ }
     if ((wx as Runtime).__fixtureMode === true && options.editId) {
       try {
         const post = readLocalPosts(wx).find(item => item.id === options.editId)
-        if (!post) wx.showToast({ title: '帖子不存在', icon: 'none' })
-        else {
-          const index = CATEGORIES.findIndex(item => item.key === post.category)
-          this.setData({
-            editId: post.id,
-            form: { content: post.content, category: post.category, anonymous: !!post.anonymousNumber, images: [...post.images] },
-            categoryIndex: index >= 0 ? index : DEFAULT_CATEGORY_INDEX,
-            categoryLabel: index >= 0 ? CATEGORIES[index].label : CATEGORIES[DEFAULT_CATEGORY_INDEX].label,
-          })
+        if (!post) { this.setData({ loadFailed: true }); wx.showToast({ title: '帖子不存在', icon: 'none' }); return }
+        const draft = readPostDraft(wx, post.id)
+        const form = { content: post.content, category: post.category, images: [...post.images], ...draft, anonymous: !!post.anonymousNumber }
+        if (form.category === 'study') this.setData({ categories: [...CATEGORIES, { key: 'study', label: '学习交流（历史）', short: '学习交流' }] })
+        const index = this.data.categories.findIndex(item => item.key === form.category)
+        this.setData({ form, categoryIndex: index >= 0 ? index : DEFAULT_CATEGORY_INDEX,
+          categoryLabel: index >= 0 ? this.data.categories[index].label : CATEGORIES[DEFAULT_CATEGORY_INDEX].label })
+      } catch { this.setData({ loadFailed: true }); wx.showToast({ title: '帖子读取失败', icon: 'none' }) }
+    } else if (options.draft === '1') {
+      try {
+        const draft = readPostDraft(wx)
+        if (draft) {
+          const index = CATEGORIES.findIndex(item => item.key === draft.category)
+          this.setData({ form: draft, categoryIndex: index >= 0 ? index : DEFAULT_CATEGORY_INDEX,
+            categoryLabel: index >= 0 ? this.data.categories[index].label : CATEGORIES[DEFAULT_CATEGORY_INDEX].label })
         }
-      } catch { wx.showToast({ title: '帖子读取失败', icon: 'none' }) }
+      } catch { wx.showToast({ title: '草稿读取失败', icon: 'none' }) }
     }
+  },
+  onShow() {
+    if (getViewerRole(wx) === 'guest') this.setData({ form: emptyPostDraft(), selfAvatar: '', selfNickname: '', loadFailed: true })
   },
   onKeyboardHeightChange(event: WechatMiniprogram.CustomEvent<{ height: number }>) {
     this.setData({ keyboardHeight: Math.max(0, event.detail.height || 0) })
   },
-  onSaveDraft() { try { wx.setStorageSync('xinkelink.post.draft.v1', { ...this.data.form, images: [] }); wx.showToast({ title: '文字草稿已保存', icon: 'success' }) } catch { wx.showToast({ title: '草稿未保存，请重试', icon: 'none' }) } },
+  onSaveDraft() {
+    if (!requireLocalSession(wx) || this.data.publishing || this._published || this.data.loadFailed) return
+    try { if (savePostDraft(wx, this.data.form, this.data.editId)) wx.showToast({ title: '文字草稿已保存', icon: 'success' }) }
+    catch { wx.showToast({ title: '草稿未保存，请重试', icon: 'none' }) }
+  },
   _choosing: false, _published: false, _leaving: false,
   onContentInput(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
     if (!this.data.publishing) this.setData({ form: { ...this.data.form, content: event.detail.value.slice(0, 500) } })
   },
   setCategory(key: PostCategory) {
-    const index = CATEGORIES.findIndex(item => item.key === key)
+    const index = this.data.categories.findIndex(item => item.key === key)
     if (index < 0 || this.data.publishing) return
-    this.setData({ form: { ...this.data.form, category: key }, categoryIndex: index, categoryLabel: CATEGORIES[index].label })
+    this.setData({ form: { ...this.data.form, category: key }, categoryIndex: index, categoryLabel: this.data.categories[index].label })
   },
   onCategoryTap(event: WechatMiniprogram.TouchEvent) { this.setCategory(event.currentTarget.dataset.category as PostCategory) },
   onCategoryPickerChange(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
-    const selected = CATEGORIES[Number(event.detail.value)]
+    const selected = this.data.categories[Number(event.detail.value)]
     if (selected) this.setCategory(selected.key as PostCategory)
   },
   onAnonymousTap() {
-    if (!this.data.publishing) this.setData({ form: { ...this.data.form, anonymous: !this.data.form.anonymous } })
+    if (!this.data.publishing && !this.data.editId) this.setData({ form: { ...this.data.form, anonymous: !this.data.form.anonymous } })
   },
   onAnonymousChange(event: WechatMiniprogram.CustomEvent<{ value: boolean }>) {
-    if (!this.data.publishing) this.setData({ form: { ...this.data.form, anonymous: event.detail.value } })
+    if (!this.data.publishing && !this.data.editId) this.setData({ form: { ...this.data.form, anonymous: event.detail.value } })
   },
   onAddImages() {
     if (this._choosing || this.data.publishing || this._published) return
@@ -104,7 +113,7 @@ registerPage(wx, Page, 'forum-publish')({
   },
   onPublishTap() {
     if (!requireLocalSession(wx)) return
-    if (this.data.publishing || this._choosing || this._published) return
+    if (this.data.publishing || this._choosing || this._published || this.data.loadFailed) return
     const error = validatePostDraft(this.data.form)
     if (error) { wx.showToast({ title: error, icon: 'none' }); return }
     this.setData({ publishing: true }); let copied: string[] = []
@@ -114,6 +123,7 @@ registerPage(wx, Page, 'forum-publish')({
         ? updateOwnPost(wx, this.data.editId, this.data.form, result.images)
         : publishForumPost(wx, this.data.form, result.images)
       this._published = true
+      try { clearPostDraft(wx, this.data.editId) } catch { /* 发布已成功，清理失败不重复发布。 */ }
       this.setData({ form: { ...this.data.form, images: result.images } })
       wx.showToast({ title: this.data.editId ? '修改已保存' : '发布成功', icon: 'success' })
       wx.redirectTo({ url: '/pages/forum-detail/index?id=' + encodeURIComponent(post.id), fail() {

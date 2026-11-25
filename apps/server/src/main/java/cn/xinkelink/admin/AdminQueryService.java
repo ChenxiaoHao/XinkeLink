@@ -29,7 +29,7 @@ public class AdminQueryService {
 
     public Map<String,Object> posts(Map<String,String> params,AuthPrincipal admin){
         support.requireAdmin(admin);Query q=new Query(params,"p.deleted_at IS NULL");
-        q.search("p.content","u.nickname");q.option("category","p.category",Set.of("campus","lost_found","study","help"));q.option("status","p.status",Set.of("visible","hidden"));q.time("p.created_at");
+        q.search("p.content","u.nickname");q.option("category","p.category",Set.of("campus","lost_found","study","help","secondhand","complain","buddy"));q.option("status","p.status",Set.of("visible","hidden"));q.time("p.created_at");
         var result=list("xl_post p JOIN xl_user u ON u.id=p.author_id","p.*",q,row->views.post(row,admin));
         Instant start=today();result.put("stats",data.one("SELECT COUNT(*) AS total,COALESCE(SUM(status='visible' AND review_state='normal'),0) AS visible,COALESCE(SUM(status='hidden'),0) AS hidden,COALESCE(SUM(created_at>=?),0) AS today,COALESCE(SUM(review_state='pending'),0) AS pending FROM xl_post WHERE deleted_at IS NULL",Timestamp.from(start)));return result;
     }

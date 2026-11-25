@@ -1,12 +1,5 @@
 @import "../../styles/chat.wxss";
 
 /* 已确认的二级页面主题，仅作用于当前页面。 */
-page { background: #FFFFFF; color: #0F1419; --xlk-color-primary: #222223; --xlk-color-primary-strong: #222223; --xlk-color-primary-soft: #F0F0F3; --xlk-color-background: #FFFFFF; --xlk-color-text: #0F1419; --xlk-color-muted: #536471; --xlk-color-border: #ECECF1; --xlk-shadow-button: none; }
-.chat-sender-name { color: #667085; font-size: 24rpx; }
-
-/* tablet-scale:begin */
-@media (min-width: 500px) {
-.chat-sender-name { font-size: 12px; }
-}
-
-/* tablet-scale:end */
+page { background: #FFFFFF; color: #0F1419; --xlk-color-primary: #0F1419; --xlk-color-primary-strong: #0F1419; --xlk-color-primary-soft: #F0F0F3; --xlk-color-background: #FFFFFF; --xlk-color-text: #0F1419; --xlk-color-muted: #536471; --xlk-color-border: #EFF3F4; --xlk-shadow-button: none; --profile-auth-primary: #0F1419; }
+.chat-sender-name { display: none; }

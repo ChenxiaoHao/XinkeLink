@@ -27,10 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles({"db", "auth"})
 @Transactional
 class MessagingHttpIT {
-    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
-    cn.xinkelink.beta.BetaService platformPhase;
-    // Business regressions run in the public phase; beta access has its own integration suite.
-    @org.junit.jupiter.api.BeforeEach void publicPlatformFixture(){org.mockito.Mockito.doReturn(false).when(platformPhase).isBeta();}
 
     @Autowired MockMvc mvc;
     @Autowired AuthService auth;

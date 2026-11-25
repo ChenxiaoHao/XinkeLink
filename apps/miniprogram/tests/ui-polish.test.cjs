@@ -98,6 +98,33 @@ test('tablet image fallback uses the native file downloader when available', asy
   assert.equal(post.data.post.images[0], 'wxfile://tmp/xinkelink.png');
 });
 
+test('local image fallback keeps in-flight authorization separate between accounts', async () => {
+  const { loadAuthorizedLocalImage } = require('../.test-dist/backend/preview.js');
+  const { client } = require('../.test-dist/backend/client.js');
+  const requests = [];
+  const downloads = [];
+  const runtime = {
+    getStorageSync: () => ({ accessToken: 'a', refreshToken: 'ra', expiresAt: Date.now() + 3600000, me: { id: '7' } }),
+    env: { USER_DATA_PATH: 'wxfile://usr' },
+    request: request => requests.push(request),
+    downloadFile: request => downloads.push(request),
+  };
+  const source = BACKEND_ORIGIN + '/api/v1/images/42/content?grant=old';
+  const previous = loadAuthorizedLocalImage(runtime, source).catch(error => error.code);
+  client(runtime).session = { accessToken: 'b', refreshToken: 'rb', expiresAt: Date.now() + 3600000, me: { id: '8' } };
+  const next = loadAuthorizedLocalImage(runtime, source).catch(error => error.code);
+  assert.deepEqual(requests.map(request => request.header.Authorization), ['Bearer a', 'Bearer b']);
+  for (const [index, request] of requests.entries()) {
+    request.success({ statusCode: 200, data: { code: 'OK', data: { url: '/api/v1/images/42/content?grant=' + index } } });
+  }
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(downloads.length, 1);
+  assert.match(downloads[0].url, /grant=1$/);
+  downloads[0].success({ statusCode: 200, tempFilePath: 'wxfile://tmp/current.png' });
+  assert.equal(await previous, 'IMAGE_LOAD_FAILED');
+  assert.equal(await next, 'wxfile://tmp/current.png');
+});
+
 test('when the native downloader fails the image can still be loaded through request', async () => {
   const { loadAuthorizedLocalImage } = require('../.test-dist/backend/preview.js');
   let wrote = false;

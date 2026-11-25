@@ -1,3 +1,4 @@
+import { requireLocalSession } from '../../features/profile/repository'
 import { client, requestId, Runtime } from '../../backend/client'
 import { registerPage } from '../../backend/pages'
 const api = client(wx)
@@ -24,6 +25,7 @@ registerPage(wx, Page, 'feedback')({
     const typeLabel = FEEDBACK_TYPES.find(item => item.key === this.data.type)?.label || '问题反馈'
     const content = contact ? `【${typeLabel}】${body}\n联系：${contact}` : `【${typeLabel}】${body}`
     if ((wx as Runtime).__fixtureMode === true) {
+      if (!requireLocalSession(wx)) return
       // 演示模式没有 Java 服务：原来的 requireSession 会走 wx.login 再请求 /auth/wechat 必然失败。
       // 反馈只留在本机，保证开发者工具里这条链路可用。
       this.setData({ busy: true })
@@ -37,7 +39,8 @@ registerPage(wx, Page, 'feedback')({
       finally { this.setData({ busy: false }) }
       return
     }
-    if (!await api.requireSession()) return
+    this.setData({ busy: true })
+    try { if (!await api.requireSession()) return } catch { wx.showToast({ title: '登录失败，请重试', icon: 'none' }); return } finally { this.setData({ busy: false }) }
     if (!pending || pending.content !== content) pending = { content, id: requestId() }
     this.setData({ busy: true })
     try {

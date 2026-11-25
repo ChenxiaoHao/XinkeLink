@@ -5,6 +5,7 @@
     <text class="record-empty-copy">请检查网络后重试。</text>
     <button class="record-primary" bindtap="reload">重新读取</button>
   </view>
+  <view wx:elif="{{!loggedIn}}" class="record-empty"><text class="record-empty-title">登录后可查看我的帖子</text></view>
   <block wx:else>
     <view class="record-intro">共 {{posts.length}} 条 · 含自己的匿名动态</view>
     <view wx:for="{{posts}}" wx:key="id" class="own-post">

@@ -54,7 +54,7 @@ public class AuditQueryService {
         if(!keyword.isEmpty()){sql.append(" AND (l.operation_id LIKE ? ESCAPE '!' OR l.actor_display LIKE ? ESCAPE '!' OR l.action LIKE ? ESCAPE '!')");String value=like(keyword);Collections.addAll(args,value,value,value);}
         if(!actor.isEmpty()){sql.append(" AND (l.actor_display LIKE ? ESCAPE '!' OR a.login_name LIKE ? ESCAPE '!')");Collections.addAll(args,like(actor),like(actor));}
         if(f.adminId()!=null){sql.append(" AND l.admin_id=?");args.add(ContentSupport.id(f.adminId()));}
-        optional(sql,args,"module",f.module(),Set.of("posts","comments","reports","users","announcements","notifications","settings"));
+        optional(sql,args,"module",f.module(),Set.of("posts","comments","reports","users","announcements","notifications","settings","lucky_bags","ai_knowledge"));
         optional(sql,args,"outcome",f.outcome(),Set.of("success","business_rejected","execution_error"));
         if(f.action()!=null){if(!f.action().matches("[a-z_]{1,48}"))throw invalid();sql.append(" AND l.action=?");args.add(f.action());}
         if(f.from()!=null){sql.append(" AND l.created_at>=?");args.add(Timestamp.from(f.from()));}

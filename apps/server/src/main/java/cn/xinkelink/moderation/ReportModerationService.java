@@ -1,6 +1,7 @@
 package cn.xinkelink.moderation;
 
 import cn.xinkelink.auth.AuthPrincipal;
+import cn.xinkelink.forum.metrics.PostMetricsCache;
 import cn.xinkelink.common.api.ErrorCode;
 import cn.xinkelink.content.ContentSupport;
 import cn.xinkelink.media.MediaService;
@@ -24,13 +25,14 @@ public class ReportModerationService {
     private static final Set<String> REASONS=Set.of("commercial_ad","fraud_or_offsite_payment","harassment","impersonation","other");
     private static final Map<String,Set<String>> ACTIONS=Map.of("post",Set.of("reject","hide_post"),"comment",Set.of("reject","hide_comment"),
             "user",Set.of("reject","warn_user","restrict_user"),"message",Set.of("reject","hide_message"));
+    private final PostMetricsCache postMetrics;
     private final ModerationRepository repository;
     private final ContentSupport support;
     private final MediaService media;
     private final NotificationService notices;
     private final UserModerationService users;
     private final Clock clock;
-    public ReportModerationService(ModerationRepository repository,ContentSupport support,MediaService media,NotificationService notices,UserModerationService users,Clock clock){
+    public ReportModerationService(ModerationRepository repository,ContentSupport support,MediaService media,NotificationService notices,UserModerationService users,Clock clock,PostMetricsCache postMetrics){this.postMetrics=postMetrics;
         this.repository=repository;this.support=support;this.media=media;this.notices=notices;this.users=users;this.clock=clock;
     }
 
@@ -130,6 +132,11 @@ public class ReportModerationService {
             case "warn_user" -> {changed=1;noticeCreated=true;}
             case "reject" -> {}
             default -> throw failure(ErrorCode.VALIDATION_FAILED);
+        }
+        if(changed > 0) {
+            if(action.equals("hide_post")) postMetrics.invalidateAfterCommit(List.of(targetId));
+            if(action.equals("hide_comment") && "post".equals(target.get("target_type")))
+                postMetrics.invalidateAfterCommit(List.of(number(target,"target_id")));
         }
         Map<String,Object> afterTarget=repository.target(type,targetId,false);
         repository.jdbc.update("UPDATE xl_report SET status='processed',resolution=?,resolution_reason=?,resolved_by=?,resolved_at=UTC_TIMESTAMP(3),updated_at=UTC_TIMESTAMP(3),version=version+1 WHERE id=?",action,reason,admin,id);

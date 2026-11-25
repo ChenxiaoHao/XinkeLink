@@ -1,15 +1,36 @@
-<app-shell id="app-shell"><view class="forum-navigation"><page-header id="brand-header" title="信科 Link" home compact monochrome><button slot="right" class="feed-info" bindtap="onAnnouncementTap" aria-label="查看校园公告"><image src="/assets/icons/x-info-ink.png" /></button></page-header>
- <scroll-view class="timeline-tabs" scroll-x enable-flex show-scrollbar="{{false}}">
-  <button wx:for="{{categories}}" wx:key="key" class="timeline-tab {{activeCategory === item.key ? 'timeline-tab--active' : ''}}" data-category="{{item.key}}" bindtap="onCategoryTap">
-   <text>{{item.label}}</text>
-   <view class="timeline-tab-underline"></view>
-  </button>
- </scroll-view>
-</view>
-<view class="forum-home">
- <view wx:if="{{loadFailed}}" class="feed-state"><text class="feed-state-title">暂时无法加载动态</text><button bindtap="onPullDownRefresh">重试</button></view>
- <view wx:for="{{posts}}" wx:key="id" id="feed-{{item.id}}" class="forum-feed-item"><forum-post-card id="feed-post-{{item.id}}" home post="{{item}}" bind:open="onOpenPost" bind:like="onLikePost" bind:repost="onRepostPost" bind:collect="onCollectPost" /></view>
- <view wx:if="{{!loadFailed && !posts.length}}" class="feed-state"><text class="feed-state-title">校园的新鲜事，从你开始</text><text>还没有动态，分享你的第一条校园生活吧。</text></view>
- <view wx:if="{{posts.length && !loadFailed}}" class="forum-feed-end">{{hasMore ? '正在发现更多校园动态…' : '你已看完所有动态'}}</view>
-</view>
-</app-shell><profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />
+<app-shell id="app-shell">
+  <view class="forum-navigation">
+    <page-header id="brand-header" title="信科 Link" home compact monochrome />
+    <view class="timeline-tabs-wrap">
+      <scroll-view class="timeline-tabs" scroll-x enable-flex show-scrollbar="{{false}}">
+        <button wx:for="{{categories}}" wx:key="key" class="timeline-tab {{activeCategory === item.key ? 'timeline-tab--active' : ''}}" data-category="{{item.key}}" bindtap="onCategoryTap">
+          <text>{{item.label}}</text>
+          <view class="timeline-tab-underline"></view>
+        </button>
+      </scroll-view>
+      <view class="timeline-tabs-fade"></view>
+    </view>
+  </view>
+  <view class="forum-home">
+    <view wx:if="{{announcement}}" class="feed-announcement" bindtap="onAnnouncementTap" aria-label="查看校园公告">
+      <view class="feed-announcement-dot"></view>
+      <text class="feed-announcement-text">公告：{{announcement}}</text>
+    </view>
+    <view wx:if="{{loadFailed}}" class="feed-state">
+      <text class="feed-state-title">暂时无法加载动态</text>
+      <button bindtap="onPullDownRefresh">重试</button>
+    </view>
+    <view wx:for="{{posts}}" wx:key="id" id="feed-{{item.id}}" class="forum-feed-item">
+      <forum-post-card id="feed-post-{{item.id}}" home post="{{item}}" bind:open="onOpenPost" bind:like="onLikePost" bind:repost="onRepostPost" bind:collect="onCollectPost" />
+    </view>
+    <view wx:if="{{!loadFailed && !posts.length}}" class="feed-state">
+      <text class="feed-state-title">校园的新鲜事，从你开始</text>
+      <text>还没有动态，分享你的第一条校园生活吧。</text>
+    </view>
+    <view wx:if="{{posts.length && !loadFailed}}" class="forum-feed-end">
+      <button wx:if="{{feedPageFailed}}" class="feed-page-retry" bindtap="onReachBottom">加载失败，点击重试</button>
+      <text wx:else>{{hasMore ? '正在发现更多校园动态…' : '你已看完所有动态'}}</text>
+    </view>
+  </view>
+</app-shell>
+<profile-auth-sheet visible="{{authVisible}}" busy="{{authSaving}}" error="{{authError}}" bind:confirm="onProfileAuthConfirm" bind:cancel="onProfileAuthCancel" />

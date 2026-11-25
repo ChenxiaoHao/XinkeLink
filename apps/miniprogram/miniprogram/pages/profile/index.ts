@@ -1,16 +1,19 @@
 import { registerPage } from '../../backend/pages'
 import { getLikedPosts, getProfileSummary, getPublicPosts } from '../../features/profile/content'
-import { defaultProfile, readLocalSession, requireLocalSession, setLocalSession } from '../../features/profile/repository'
+import { requireLocalSession, setLocalSession } from '../../features/profile/repository'
+import { getViewerRole } from '../../features/profile/viewer'
 import { togglePostInteraction } from '../../features/forum/repository'
 import { menuRightSpace } from '../../utils/layout'
 import { ForumPostView } from '../../features/forum/types'
 
+const guestProfile = () => ({ version: 1 as const, nickname: '访客', avatar: '/assets/icons/user-round-muted.png', bio: '', major: '', className: '', studentId: '', year: '' })
+
 registerPage(wx, Page, 'profile')({
   data: {
-    profile: defaultProfile(),
+    profile: guestProfile(),
     posts: [] as ForumPostView[], likedPosts: [] as ForumPostView[], activeTab: 'posts' as 'posts' | 'liked',
     postCount: 0, collectionCount: 0, likeCount: 0,
-    loadFailed: false, loggedIn: true, loggingIn: false,
+    loadFailed: false, loggedIn: false, loggingIn: false,
     statusHeight: 20, rightSpace: 104,
   },
   onShow() {
@@ -27,10 +30,15 @@ registerPage(wx, Page, 'profile')({
     } catch { /* 取不到系统几何时保持默认值。 */ }
   },
   reload() {
+    if (getViewerRole(wx) === 'guest') {
+      this.setData({ profile: guestProfile(), posts: [], likedPosts: [], activeTab: 'posts', postCount: 0, collectionCount: 0, likeCount: 0, loggedIn: false, loadFailed: false })
+      wx.redirectTo?.({ url: '/pages/user-home/index?id=local-student' })
+      return
+    }
     try {
       const summary = getProfileSummary(wx)
-      this.setData({ ...summary, posts: getPublicPosts(wx), likedPosts: getLikedPosts(wx), loggedIn: readLocalSession(wx), loadFailed: false })
-    } catch { this.setData({ loadFailed: true }) }
+      this.setData({ ...summary, posts: getPublicPosts(wx), likedPosts: getLikedPosts(wx), loggedIn: true, loadFailed: false })
+    } catch { this.setData({ profile: guestProfile(), posts: [], likedPosts: [], postCount: 0, collectionCount: 0, likeCount: 0, loadFailed: true }) }
   },
   onHide() { this.getTabBar()?.setData({ publishVisible: false }) },
   onRemoteAvatarError() {
@@ -38,12 +46,13 @@ registerPage(wx, Page, 'profile')({
     if (profile.avatar !== '/assets/icons/user-round-muted.png') this.setData({ 'profile.avatar': '/assets/icons/user-round-muted.png' })
   },
   onTabTap(event: WechatMiniprogram.TouchEvent) {
+    if (!requireLocalSession(wx)) return
     const tab = event.currentTarget.dataset.tab
     if (tab === 'posts' || tab === 'liked') this.setData({ activeTab: tab })
   },
   onOpenPost(event: WechatMiniprogram.CustomEvent<{ id: string }>) { wx.navigateTo({ url: '/pages/forum-detail/index?id=' + encodeURIComponent(event.detail.id) }) },
   onLikePost(event: WechatMiniprogram.CustomEvent<{ id: string }>) { this.saveInteraction(event.detail.id, 'liked') },
-  onRepostPost(event: WechatMiniprogram.CustomEvent<{ id: string }>) { this.saveInteraction(event.detail.id, 'reposted') },
+  onRepostPost() { wx.showToast({ title: '转发功能尚未开放', icon: 'none' }) },
   onCollectPost(event: WechatMiniprogram.CustomEvent<{ id: string }>) { this.saveInteraction(event.detail.id, 'collected') },
   saveInteraction(id: string, field: 'liked' | 'collected' | 'reposted') {
     if (!requireLocalSession(wx)) return
@@ -52,6 +61,7 @@ registerPage(wx, Page, 'profile')({
   },
   onBack() { wx.navigateBack({ delta: 1, fail() { wx.switchTab({ url: '/pages/forum/index' }) } }) },
   onMoreTap() {
+    if (!requireLocalSession(wx)) return
     const items = ['编辑个人资料', '我的帖子', '我的点赞', '意见反馈', '关于信科 Link']
     wx.showActionSheet({ itemList: items, success: result => {
       if (result.tapIndex === 0) this.onEditTap()
@@ -61,8 +71,8 @@ registerPage(wx, Page, 'profile')({
       if (result.tapIndex === 4) this.onAboutTap()
     }, fail: () => { /* 取消不提示 */ } })
   },
-  onMyPostsTap() { wx.navigateTo({ url: '/pages/my-posts/index' }) },
-  onCollectionsTap() { wx.navigateTo({ url: '/pages/my-collections/index' }) },
+  onMyPostsTap() { if (requireLocalSession(wx)) wx.navigateTo({ url: '/pages/my-posts/index' }) },
+  onCollectionsTap() { if (requireLocalSession(wx)) wx.navigateTo({ url: '/pages/my-collections/index' }) },
   onEditTap() { if (requireLocalSession(wx)) wx.navigateTo({ url: '/pages/profile-edit/index' }) },
   onSettingsTap() { wx.navigateTo({ url: '/pages/feedback/index' }) },
   onHomeTap() { if (!this.data.loadFailed) wx.navigateTo({ url: '/pages/user-home/index?id=local-student' }) },

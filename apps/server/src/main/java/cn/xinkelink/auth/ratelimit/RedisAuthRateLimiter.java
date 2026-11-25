@@ -37,7 +37,6 @@ public final class RedisAuthRateLimiter implements AuthRateLimiter {
             case "wechat" -> 10;
             case "admin" -> 5;
             case "refresh" -> 30;
-            case "beta" -> 5;
             default -> throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         };
         String redisKey = "xinkelink:auth:rate:" + operation + ":" + digest(key);

@@ -1,17 +1,117 @@
-.x-header{background:#fff;color:#0f1419}.x-toolbar{position:relative;display:flex;align-items:center;justify-content:center;min-height:44px}
-/* 左侧品牌页（Link AI）：标题靠左，不占头像位。 */
-.x-toolbar--left{justify-content:flex-start;padding-left:16px}
-.x-toolbar-heading{display:flex;align-items:center;min-width:0}
-.x-avatar-button{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:32px;min-width:32px;height:32px;padding:0;margin:0;background:transparent;border-radius:50%}.x-toolbar-avatar{width:32px;height:32px;border-radius:50%}
-/* 没有可用头像时的「首字 + 品牌红底」，对应设计稿封面/顶栏的红色圆形头像。 */
-.x-toolbar-letter{display:flex;align-items:center;justify-content:center;background:#c2331e;color:#fff;font-size:15px;font-weight:700;line-height:1;flex:none}.x-wordmark{width:28px;height:28px}.x-toolbar-title{font-size:20px;font-weight:800;line-height:1.2}.x-toolbar-action{position:absolute;top:50%;transform:translateY(-50%);width:28px;min-width:28px;height:32px;margin:0;padding:0;background:transparent}.x-toolbar-action image{width:25px;height:25px}
-/* 页面自定义的顶栏右侧内容，与 action 按钮同一位置（避开微信胶囊）。 */
-.x-toolbar-slot{position:absolute;top:50%;transform:translateY(-50%);display:flex;align-items:center}
-
-.x-header-search{position:absolute;left:62px;height:39px;border-radius:10px;background:#f3f3f3;display:flex;gap:9px;align-items:center;padding:0 12px;min-width:80px}.x-header-search image{width:18px;height:18px;flex:none}.x-header-search input{width:100%;min-width:0;font-size:16px;color:#0f1419}
-/* 标题旁的轻量状态标签，例如 Link AI 的「免费」。 */
-.x-toolbar-badge{margin-left:6px;padding:1px 6px;border-radius:7px;background:#e8f5fd;color:#0f1419;font-size:12px;font-weight:600;line-height:16px}
-
-/* 访客态：页头左侧显示灰色默认头像（人形占位），点击进入侧栏登录。 */
-.x-toolbar-guest { display:flex; align-items:center; justify-content:center; background:#eff3f4; }
-.x-toolbar-guest image { width:19px; height:19px; }
+.x-header { background: #fff; color: #0f1419; }
+.x-toolbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+.x-toolbar--left {
+  justify-content: flex-start;
+  padding-left: 58px;
+}
+.x-toolbar-heading {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.x-toolbar-heading--left {
+  flex: 1;
+}
+.x-avatar-button {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border-radius: 50%;
+}
+.x-toolbar-avatar {
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(15, 20, 25, 0.08);
+}
+.x-toolbar-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f1419;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  flex: none;
+}
+.x-wordmark { width: 28px; height: 28px; }
+.x-toolbar-title {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.x-toolbar-action {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.x-toolbar-action:active { background: #eff3f4; }
+.x-toolbar-action-icon { width: 20px; height: 20px; }
+.x-toolbar-slot {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.x-header-search {
+  position: absolute;
+  left: 58px;
+  height: 34px;
+  border-radius: 17px;
+  background: #eff3f4;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding: 0 12px;
+  min-width: 80px;
+}
+.x-header-search-icon { width: 15px; height: 15px; flex: none; opacity: 0.75; }
+.x-header-search-input { width: 100%; min-width: 0; font-size: 14px; color: #0f1419; }
+.x-toolbar-badge {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 7px;
+  background: #eff3f4;
+  color: #0f1419;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  flex: none;
+}
+.x-toolbar-guest {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff3f4;
+}
+.x-toolbar-guest-icon { width: 18px; height: 18px; }

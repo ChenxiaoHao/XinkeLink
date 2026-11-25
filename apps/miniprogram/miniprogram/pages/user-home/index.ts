@@ -1,11 +1,12 @@
+import { getViewerRole } from '../../features/profile/viewer'
 import { registerPage } from '../../backend/pages'
 import { getPublicProfile, PublicProfile } from '../../features/profile/content'
-import { readLocalSession, requireLocalSession } from '../../features/profile/repository'
+import { requireLocalSession } from '../../features/profile/repository'
 import { togglePostInteraction } from '../../features/forum/repository'
 import { PostInteraction } from '../../features/forum/types'
 import { menuRightSpace } from '../../utils/layout'
 registerPage(wx, Page, 'user-home')({
-  data: { profile: null as PublicProfile | null, loadFailed: false, loggedIn: true, statusHeight: 20, rightSpace: 104 },
+  data: { profile: null as PublicProfile | null, loadFailed: false, loggedIn: false, statusHeight: 20, rightSpace: 104 },
   _id: 'local-student',
   onLoad(options: Record<string, string | undefined>) { this._id = options.id || 'local-student'; this.readLayout(); this.reload() },
   onShow() { this.reload() },
@@ -18,7 +19,7 @@ registerPage(wx, Page, 'user-home')({
     } catch { /* 取不到系统几何时保持默认值。 */ }
   },
   reload() {
-    try { this.setData({ profile: getPublicProfile(wx, this._id), loggedIn: readLocalSession(wx), loadFailed: false }) }
+    try { this.setData({ profile: getPublicProfile(wx, this._id), loggedIn: getViewerRole(wx) !== 'guest', loadFailed: false }) }
     catch { this.setData({ profile: null, loadFailed: true }) }
   },
   onPullDownRefresh() { try { this.reload() } finally { wx.stopPullDownRefresh() } },
@@ -42,7 +43,7 @@ registerPage(wx, Page, 'user-home')({
     catch { wx.showToast({ title: '操作未保存，请重试', icon: 'none' }) }
   },
   onLikePost(event: WechatMiniprogram.CustomEvent<{ id: string }>) { this.saveInteraction(event.detail.id, 'liked') },
-  onRepostPost(event: WechatMiniprogram.CustomEvent<{ id: string }>) { this.saveInteraction(event.detail.id, 'reposted') },
+  onRepostPost() { wx.showToast({ title: '转发功能尚未开放', icon: 'none' }) },
   onCollectPost(event: WechatMiniprogram.CustomEvent<{ id: string }>) { this.saveInteraction(event.detail.id, 'collected') },
   onShareAppMessage(event: WechatMiniprogram.Page.IShareAppMessageOption) {
     const post = this.data.profile?.posts.find(item => item.id === event.target?.dataset.postId)

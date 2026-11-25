@@ -108,6 +108,9 @@ function bulkStatus(status: ModerationStatus) {
           <el-option label="失物招领" value="失物招领" />
           <el-option label="学习交流" value="学习交流" />
           <el-option label="校园互助" value="校园互助" />
+          <el-option label="二手闲置" value="二手闲置" />
+          <el-option label="吐槽" value="吐槽" />
+          <el-option label="找搭子" value="找搭子" />
         </el-select>
         <el-select v-model="filters.status" aria-label="帖子状态筛选" class="filter-select" data-testid="post-status-filter">
           <el-option label="全部状态" value="all" />

@@ -73,7 +73,7 @@ test('real HTTP core workflows and admin browser integration', async ({ page, re
 
   for (const width of [1366, 1440]) {
     await page.setViewportSize({ width, height: 812 })
-    for (const route of ['posts', 'comments', 'reports', 'users', 'announcements', 'notifications', 'beta', 'logs', 'settings']) {
+    for (const route of ['posts', 'comments', 'reports', 'users', 'announcements', 'notifications', 'logs', 'settings']) {
       const endpoint = route === 'logs' ? 'audit-events' : route
       const loaded = page.waitForResponse(response => response.url().includes(`/api/v1/admin/${endpoint}`) && response.request().method() === 'GET')
       await page.goto(`/admin/${route}`)

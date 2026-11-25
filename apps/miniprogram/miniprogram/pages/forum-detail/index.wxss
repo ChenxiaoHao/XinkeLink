@@ -1,7 +1,10 @@
 /* 帖子详情：正文占满一屏 → 8 灰带 → 回复流 → 压底回复栏。
    数值口径 375 基准 px。 */
 .detail-header { position:sticky; top:0; z-index:20; background:#fff; }
-.forum-detail { background:#fff; padding-bottom:calc(96px + env(safe-area-inset-bottom)); }
+.forum-detail { background:#fff; }
+.detail-composer-space { visibility:hidden; padding:10px 16px; border-top:1px solid transparent; }
+.detail-composer-collapsed-space { height:40px; }
+.detail-draft-measure { white-space:pre-wrap; word-break:break-word; overflow-wrap:anywhere; overflow:hidden; }
 
 .detail-empty { padding:64px 32px; text-align:center; color:#536471; font-size:15px; line-height:20px; }
 .detail-empty button { width:max-content; min-width:0; margin:20px auto 0 !important; padding:0 20px; height:36px; border-radius:18px; background:#0f1419; color:#fff; font-size:15px; font-weight:700; line-height:36px; }
@@ -11,13 +14,18 @@
 .detail-comments { padding:0 16px 8px; }
 .detail-comments-heading { display:flex; align-items:center; justify-content:space-between; height:48px; }
 .detail-comments-title { color:#0f1419; font-size:20px; font-weight:800; line-height:26px; }
-/* 设计稿右侧是蓝色的「按热度」，可点切换成时间序。 */
-.detail-comment-order { width:auto; min-width:0; margin:0; padding:0; background:transparent; color:#0f1419; font-size:15px; font-weight:500; line-height:20px; }
+/* 描边胶囊，沿用现有热度/时间切换。 */
+.detail-comment-order { width:auto; min-width:0; margin:0; padding:0 10px; height:26px; line-height:24px; border:1px solid #cfd9de; border-radius:13px; background:#fff; color:#0f1419; font-size:12px; font-weight:600; }
 
-.detail-thread { border-bottom:1px solid #eff3f4; }
+.detail-thread { position:relative; border-bottom:1px solid #eff3f4; }
 .detail-thread:last-child { border-bottom:0; }
-.detail-replies { margin-left:44px; }
-.detail-replies .detail-expand-replies { width:auto; min-width:0; margin:0 0 4px; padding:6px 0; background:transparent; color:#0f1419; font-size:13px; font-weight:400; line-height:18px; text-align:left; }
+.detail-replies { position:relative; margin-left:44px; }
+.detail-thread--replies::before { content:''; position:absolute; left:20px; top:56px; bottom:0; width:1.5px; background:#e9eef1; border-radius:1px; }
+.detail-reply { position:relative; }
+/* Stop the hook at the final 32px avatar's centre, regardless of text height. */
+.detail-reply--last::before { content:''; position:absolute; left:-24px; top:26px; bottom:0; width:2px; background:#fff; }
+.detail-replies--link .detail-expand-replies::before { content:''; position:absolute; left:-24px; top:0; bottom:-4px; width:2px; background:#fff; }
+.detail-replies .detail-expand-replies { position:relative; overflow:visible; width:auto; min-width:0; margin:0 0 4px; padding:6px 0; background:transparent; color:#0f1419; font-size:13px; font-weight:400; line-height:18px; text-align:left; }
 .detail-comment-empty { padding:40px 0; text-align:center; color:#536471; font-size:13px; }
 
 .detail-composer { position:fixed; left:0; right:0; z-index:30; padding:10px 16px; background:#fff; border-top:1px solid #eff3f4; }
@@ -27,15 +35,21 @@
 .detail-self-letter { display:flex; align-items:center; justify-content:center; background:#c2331e; color:#fff; font-size:15px; font-weight:700; line-height:1; }
 .detail-bottom-row .detail-comment-placeholder { display:flex; align-items:center; flex:1; width:0; min-width:0; height:40px; margin:0; padding:0 16px; border-radius:20px; background:#f7f9f9; color:#536471; font-size:15px; font-weight:400; line-height:40px; text-align:left; }
 
-.detail-compose-heading { display:flex; align-items:center; padding:0 0 8px; color:#536471; font-size:13px; line-height:18px; }
-.detail-compose-heading > text { flex:1; min-width:0; }
-.detail-compose-heading button { width:auto; min-width:0; margin:0 0 0 16px !important; padding:0; background:transparent; color:#0f1419; font-size:13px; font-weight:400; line-height:18px; }
-.detail-comment-input { box-sizing:border-box; width:100%; min-height:56px; max-height:140px; padding:10px 12px; border-radius:12px; background:#f7f9f9; color:#0f1419; font-size:15px; line-height:20px; }
-.detail-compose-actions { display:flex; align-items:center; justify-content:space-between; margin-top:8px; color:#536471; font-size:12px; }
+.detail-compose-heading { position:relative; display:flex; align-items:center; height:18px; margin-bottom:8px; color:#536471; font-size:13px; line-height:18px; }
+.detail-compose-target { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.detail-compose-name { color:#0f1419; font-weight:700; }
+.detail-compose-heading button { width:auto; min-width:0; margin:0 0 0 16px !important; padding:0; background:transparent; color:#0f1419; font-size:13px; font-weight:600; line-height:18px; }
+.detail-compose-heading .detail-compose-close { position:relative; font-size:16px; }
+.detail-compose-close::before { content:''; position:absolute; left:-8px; right:-8px; top:-13px; bottom:-13px; }
+.detail-compose-error { height:22px; color:#f4212e; font-size:12px; line-height:22px; }
+.detail-comment-input { box-sizing:border-box; width:100%; min-height:56px; max-height:140px; padding:10px 12px; border-radius:12px; background:#f7f9f9; color:#0f1419; font-size:15px; line-height:21px; }
+.detail-compose-actions { display:flex; align-items:center; justify-content:space-between; margin-top:8px; height:32px; color:#536471; font-size:12px; }
 .detail-compose-actions .detail-comment-send { width:auto; min-width:0; margin:0; padding:0 18px; height:32px; border-radius:16px; background:#0f1419; color:#fff; font-size:14px; font-weight:700; line-height:32px; }
-.detail-comment-send[disabled] { opacity:.55; }
+.detail-compose-actions .detail-comment-send[disabled] { background:#eff3f4; color:#8b98a5; opacity:1; }
 
 @media (min-width: 500px) {
   .forum-detail, .detail-composer { max-width:460px; margin:0 auto; }
   .detail-composer { left:0; right:0; }
 }
+
+page { --profile-auth-primary:#0f1419; }

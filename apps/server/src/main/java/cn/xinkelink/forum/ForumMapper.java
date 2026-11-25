@@ -69,12 +69,18 @@ public interface ForumMapper {
             <script>SELECT p.id,
             (SELECT COUNT(*) FROM xl_like l WHERE l.target_type='post' AND l.target_id=p.id) AS like_count,
             (SELECT COUNT(*) FROM xl_comment c WHERE c.target_type='post' AND c.target_id=p.id AND """ + PUBLIC_COMMENT + """
-            ) AS comment_count,
+            ) AS comment_count
+            FROM xl_post p WHERE p.id IN <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach></script>
+            """)
+    List<PublicPostMetric> publicPostMetrics(@Param("ids") Collection<Long> ids);
+
+    @Select("""
+            <script>SELECT p.id,
             EXISTS(SELECT 1 FROM xl_like l WHERE l.target_type='post' AND l.target_id=p.id AND l.user_id=#{viewer}) AS liked,
             EXISTS(SELECT 1 FROM xl_favorite f WHERE f.target_type='post' AND f.target_id=p.id AND f.user_id=#{viewer}) AS favorited
             FROM xl_post p WHERE p.id IN <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach></script>
             """)
-    List<PostMetric> postMetrics(@Param("ids") Collection<Long> ids, @Param("viewer") Long viewer);
+    List<PostViewerState> postViewerStates(@Param("ids") Collection<Long> ids, @Param("viewer") Long viewer);
 
     @Update("UPDATE xl_post SET deleted_at=CURRENT_TIMESTAMP(3),updated_at=CURRENT_TIMESTAMP(3),version=version+1 WHERE id=#{id} AND deleted_at IS NULL")
     int deletePost(long id);

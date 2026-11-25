@@ -1,3 +1,4 @@
+import { requireLocalSession } from '../../features/profile/repository'
 import { registerPage } from '../../backend/pages'
 import { readForum } from '../../features/forum/repository'
 import { REPORT_REASONS, ReportReason, ReportTargetKind, submitLocalReport } from '../../features/moderation/repository'
@@ -35,12 +36,14 @@ registerPage(wx, Page, 'report')({
     const index = Number(event.currentTarget.dataset.index)
     if (Number.isInteger(index)) this.setData({ evidence: this.data.evidence.filter((_, i) => i !== index) })
   },
+  _submitted: false,
   onSubmitReport() {
-    if (this.data.submitting || this.data.targetMissing) return
+    if (this._submitted || this.data.submitting || this.data.targetMissing || !requireLocalSession(wx)) return
     this.setData({ submitting: true })
     try {
       submitLocalReport(wx, { targetKind: this.data.targetKind, targetId: this.data.targetId, reason: this.data.reason,
         detail: this.data.detail, evidence: this.data.evidence })
+      this._submitted = true
       wx.showModal({ title: '举报已记录', content: '当前为本地模拟记录，不会发送到平台处理。', showCancel: false, confirmText: '知道了', success: () => wx.navigateBack({ delta: 1 }) })
     } catch (error) {
       const message = error && typeof error === 'object' && 'message' in error ? String((error as { message: unknown }).message) : '举报未保存，请重试'

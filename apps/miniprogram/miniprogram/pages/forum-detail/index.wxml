@@ -11,23 +11,34 @@
         <text class="detail-comments-title">回复</text>
         <button class="detail-comment-order" bindtap="onToggleOrder">{{commentOrder === 'hot' ? '按热度' : '按时间'}}</button>
       </view>
-      <view wx:for="{{comments}}" wx:key="id" class="detail-thread">
+      <view wx:for="{{comments}}" wx:key="id" class="detail-thread {{item.replyCount ? 'detail-thread--replies' : ''}}">
         <forum-comment comment="{{item}}" bind:reply="onReplyTap" bind:like="onCommentLike" bind:expand="onExpandComment" bind:delete="onDeleteComment" />
-        <view wx:if="{{item.replyCount}}" class="detail-replies">
-          <forum-comment wx:for="{{item.replies}}" wx:for-item="reply" wx:key="id" comment="{{reply}}" compact="{{true}}" bind:reply="onReplyTap" bind:like="onCommentLike" bind:expand="onExpandComment" bind:delete="onDeleteComment" />
+        <view wx:if="{{item.replyCount}}" class="detail-replies {{item.replyCount > 1 ? 'detail-replies--link' : ''}}">
+          <view wx:for="{{item.replies}}" wx:for-item="reply" wx:for-index="replyIndex" wx:key="id" class="detail-reply {{replyIndex === item.replies.length - 1 ? 'detail-reply--last' : ''}}"><forum-comment comment="{{reply}}" compact="{{true}}" bind:reply="onReplyTap" bind:like="onCommentLike" bind:expand="onExpandComment" bind:delete="onDeleteComment" /></view>
           <button wx:if="{{item.replyCount > 1}}" class="detail-expand-replies" data-id="{{item.id}}" bindtap="onExpandReplies">{{item.repliesExpanded ? '收起回复' : '查看全部 ' + item.replyCount + ' 条回复'}}</button>
         </view>
       </view>
       <view wx:if="{{!comments.length}}" class="detail-comment-empty">还没有回复，来说两句吧</view>
     </view>
   </block>
+  <!-- Match the fixed editor's current text height without adding page state. -->
+  <view wx:if="{{post && !loadFailed}}" class="detail-composer-space" aria-hidden="true" style="margin-top:{{keyboardHeight}}px; padding-bottom:{{keyboardHeight ? '10px' : 'calc(10px + env(safe-area-inset-bottom))'}};">
+    <block wx:if="{{composerOpen}}">
+      <view class="detail-compose-heading"></view>
+      <view wx:if="{{sendFailed}}" class="detail-compose-error"></view>
+      <view class="detail-comment-input detail-draft-measure">{{commentDraft}}<text>​</text></view>
+      <view class="detail-compose-actions"></view>
+    </block>
+    <view wx:else class="detail-composer-collapsed-space"></view>
+  </view>
 </view>
 
 <view wx:if="{{post && !loadFailed}}" class="detail-composer" style="bottom: {{keyboardHeight}}px; padding-bottom: {{keyboardHeight ? '10px' : 'calc(10px + env(safe-area-inset-bottom))'}};">
   <block wx:if="{{composerOpen}}">
-    <view class="detail-compose-heading"><text>{{replyTarget ? '回复 ' + replyTarget.name : '发表回复'}}</text><button wx:if="{{replyTarget}}" bindtap="onCancelReply">取消回复</button><button bindtap="onCloseComposer">收起</button></view>
+    <view class="detail-compose-heading"><text class="detail-compose-target"><block wx:if="{{replyTarget}}">回复 <text class="detail-compose-name">{{replyTarget.name}}</text></block><block wx:else>发表回复</block></text><button wx:if="{{replyTarget}}" bindtap="onCancelReply">取消回复</button><button class="detail-compose-close" bindtap="onCloseComposer">收起</button></view>
+    <view wx:if="{{sendFailed}}" class="detail-compose-error">评论未发送，内容已保留</view>
     <textarea class="detail-comment-input" value="{{commentDraft}}" placeholder="说点什么吧…" maxlength="1000" auto-height focus="{{composerOpen}}" adjust-position="{{false}}" bindinput="onCommentInput" bindkeyboardheightchange="onKeyboardHeightChange" />
-    <view class="detail-compose-actions"><text>{{commentDraft.length}}/1000</text><button class="detail-comment-send" bindtap="onSubmitComment" loading="{{sending}}" disabled="{{sending}}">发送</button></view>
+    <view class="detail-compose-actions"><text>{{commentDraft.length}}/1000</text><button class="detail-comment-send" bindtap="onSubmitComment" loading="{{sending}}" disabled="{{sending || !commentDraft}}">{{sendFailed ? '重试' : '发送'}}</button></view>
   </block>
   <view wx:else class="detail-bottom-row">
     <image wx:if="{{selfAvatar}}" class="detail-self-avatar" src="{{selfAvatar}}" mode="aspectFill" />

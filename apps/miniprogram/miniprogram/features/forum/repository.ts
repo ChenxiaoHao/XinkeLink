@@ -43,6 +43,7 @@ export function readForum(storage: ForumStorage): { posts: MockPost[]; interacti
   return { posts, interactions, commentState }
 }
 export function togglePostInteraction(storage: ForumStorage, id: string, field: keyof PostInteraction): void {
+  if (field === 'reposted') throw new Error('转发功能即将上线')
   // 访客不能互动：弹一键登录（各页面的点赞入口统一在这里拦截）。
   if (!requireLocalSession(storage)) return
   const snapshot = readForum(storage)
@@ -92,7 +93,7 @@ export function publishForumPost(storage: ForumStorage, form: PostDraft, images:
   storage.setStorageSync(POST_STORAGE_KEY, [post, ...existing])
   return post
 }
-/** 演示模式下的「编辑我的帖子」：保留原 id、评论与点赞，只更新正文/分类/匿名/图片。 */
+/** 保留原 id、匿名身份、评论与点赞，只更新正文/分类/图片。 */
 export function updateOwnPost(storage: ForumStorage, id: string, form: PostDraft, images: string[]): MockPost {
   const error = validatePostDraft({ ...form, images })
   if (error) throw new Error(error)
@@ -101,10 +102,7 @@ export function updateOwnPost(storage: ForumStorage, id: string, form: PostDraft
   const previous = posts[index]
   const updated: MockPost = {
     ...previous, category: form.category, content: form.content.trim(), images: [...images],
-    // 匿名开关可来回切换；重新开启时沿用原来的匿名编号，避免主页上的身份跳变。
-    ...(form.anonymous
-      ? { anonymousNumber: previous.anonymousNumber ?? String(Math.floor(Math.random() * 900) + 100) }
-      : { anonymousNumber: undefined }),
+    anonymousNumber: previous.anonymousNumber,
   }
   const next = [...posts]; next[index] = updated
   storage.setStorageSync(POST_STORAGE_KEY, next)

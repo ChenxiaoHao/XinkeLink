@@ -167,7 +167,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | F01 | GET | /api/v1/posts | Q:{category?,sort=recommended/latest,keyword?,cursor?,size?} → CursorPage<PostCard> | P；forum | M | category仅四编码；推荐首版退化为最新；CURSOR_INVALID |
 | F02 | POST | /api/v1/posts | B:{content,category,imageIds:[],anonymous:boolean,clientRequestId} → PostDetail | U+publish；forum-publish | M | IMAGE_FORBIDDEN/DUPLICATE_REQUEST_CONFLICT；无客户端author/status |
-| F03 | GET | /api/v1/posts/{postId} | ID → PostDetail；owner为OwnerPostDetail | P，owner可读本人治理信息；forum-detail/分享 | M | TARGET_UNAVAILABLE；匿名投影 |
+| F03 | GET | /api/v1/posts/{postId} | ID → PostDetail（含 viewReportingEnabled）；owner为OwnerPostDetail | P，owner可读本人治理信息；forum-detail/分享 | M | TARGET_UNAVAILABLE；匿名投影；viewReportingEnabled 为 true 时可上报公开详情浏览 |
 | F04 | DELETE | /api/v1/posts/{postId} | If-Match → {deleted:true,removedCommentCount} | O；my-posts | M | VERSION_CONFLICT；软删帖子及评论，公共关联失效 |
 | F05 | GET | /api/v1/me/posts | Q:cursor,size → CursorPage<OwnerPostDetail>含本人匿名和可见状态 | O；my-posts | M | createdAt倒序；不复用公开用户帖子过滤；已删除不再列出 |
 | F06 | PUT | /api/v1/posts/{postId}/like | 无 → {liked:true,likeCount,changed} | U；卡片/详情/搜索/收藏 | M | TARGET_UNAVAILABLE；唯一约束幂等 |
@@ -187,6 +187,8 @@ F16覆盖原设计中“无帖子编辑”的历史决定，其他既有路径�
 ## 7. 已移除的业务
 
 二手功能及关联数据已删除，原P系列和AM系列接口不再注册。
+
+内测和福袋已下线，原B、AB和L系列接口已撤除。访客直接使用公开浏览接口，写操作及私有资源继续使用原有身份和权限检查。Flyway V19 停用旧中奖通知，历史内测、活动、领奖与审计记录保留。
 
 ## 8. 搜索与互动汇总（2M、1L）
 
@@ -350,35 +352,18 @@ AS配置仅持久化/展示，effectMode=configuration_only，不执行自动AI/
 | AN | 6 | 6 | 0 | 0 |
 | AL | 3 | 2 | 0 | 1 |
 | AS | 3 | 1 | 0 | 2 |
-| B | 2 | 2 | 0 | 0 |
-| AB | 3 | 3 | 0 | 0 |
 | FB | 1 | 1 | 0 | 0 |
 | AF | 1 | 1 | 0 | 0 |
-| **合计** | **105** | **92** | **3** | **10** |
+| **本表合计** | **100** | **87** | **3** | **10** |
+
+当前服务另外注册浏览统计 3 项和 Link AI 12 项，含 Actuator 共 115 个 HTTP 方法。Link AI 接口见 [Link AI 第一版](23-link-ai-v1.md)。
 
 两端使用真实ID与匿名DTO、ISO时间、游标、鉴权及错误响应；后台不能用掩码学号作关联。自填学号与搜索历史仅保留本机，不自动上传。契约检查逐项核对本文端点。
 
 验收必须包括：跨用户/角色越权、匿名正文和评论的身份泄露、双端同ID/同计数、重复赞藏/消息/发送、并发举报只处理一次、永久封禁保护、临时解封不误清人工限制、图片引用/证据权限、消息水位与断线补取、审计失败隔离、列表/统计/CSV同过滤口径。没有真实微信/数据库/双账号证据时只能写“未验证”，不能把Mock测试替代服务端验收。
 
 
-## 20. 内测准入与内测管理（2026-11-08 新增5项）
-
-| ID | HTTP | URL | 请求 → 响应 | 权限/页面 | 级别 | 附加错误/分页排序 |
-| --- | --- | --- | --- | --- | --- | --- |
-| B01 | GET | /api/v1/beta/access | 无 → {phase:beta/open,authenticated,activated} | 匿名/用户；准入页 | M | 不返回内测码；读取失败不能视为开放 |
-| B02 | POST | /api/v1/beta/redeem | B:{code} → 准入状态 | U；输入内测码 | M | BETA_CODE_UNAVAILABLE；账号/IP限流；一码一账号、一账号一码，重试不多消耗 |
-| AB01 | GET | /api/v1/admin/beta | 无 → BetaOverview | A；内测管理/顶栏阶段 | M | 完整码仅管理员可见；无openid/token |
-| AB02 | POST | /api/v1/admin/beta/initialize | B:{} → BetaOverview | A；生成30个内测码并开启内测 | M | 原子固定30个；重复调用不追加/重置/切换阶段 |
-| AB03 | PATCH | /api/v1/admin/beta | B:{phase:beta/open,expectedVersion} → BetaOverview | A；确认阶段切换 | M | VERSION_CONFLICT；未初始化不能开启内测 |
-
-BetaOverview={phase,version,total,used,remaining,codes:[{id,code,status:unused/used,user:{id,nickname}/null,usedAt,createdAt}]}。ID用十进制字符串，时间为UTC ISO。未使用码忽略大小写、空白及分隔符；已激活账号误填其他码不会额外消耗。
-
-内测状态由数据库保存；未登录或未兑换用户的业务HTTP、图片和WebSocket均受服务端限制，返回BETA_ACCESS_REQUIRED（403），不依赖前端遮罩。登录/刷新/退出、本人资料确认及头像上传、内测准入接口和管理员操作为必要例外。原生图片字节请求通过授权grant中的身份验证内测资格，不要求image组件发送Bearer。
-
-正式开放后关闭内测门槛，账号、社交内容及绑定历史保留；重开内测立即恢复限制。首批初始化及验证结果见该轮验收报告。当前HTTP数量见第19节。
-
-
-## 21. 意见反馈（2M）
+## 20. 意见反馈（2M）
 
 | ID | HTTP | URL | 请求 → 响应 | 权限/页面 | 级别 | 附加错误/规则 |
 | --- | --- | --- | --- | --- | --- | --- |
