@@ -1,13 +1,18 @@
 package cn.xinkelink.forum;
 
 import cn.xinkelink.auth.AuthPrincipal;
+import cn.xinkelink.forum.metrics.PostMetricsCache;
 import cn.xinkelink.common.api.BusinessException;
 import cn.xinkelink.common.api.CursorPage;
 import cn.xinkelink.common.api.ErrorCode;
 import cn.xinkelink.content.ContentCursor;
 import cn.xinkelink.content.ContentSupport;
+import cn.xinkelink.content.security.ContentScene;
+import cn.xinkelink.content.security.ContentSecurityService;
 import cn.xinkelink.media.MediaService;
 import cn.xinkelink.notification.NotificationService;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,18 +29,29 @@ import static cn.xinkelink.forum.ForumModels.*;
 @Transactional(readOnly = true)
 public class ForumService {
     private final ForumMapper mapper;
+    private final PostMetricsCache postMetrics;
     private final ContentSupport support;
     private final ContentCursor cursors;
     private final MediaService media;
     private final NotificationService notifications;
+    private final ContentSecurityService contentSecurity;
 
-    public ForumService(ForumMapper mapper, ContentSupport support, ContentCursor cursors, MediaService media, NotificationService notifications) {
-        this.mapper = mapper; this.support = support; this.cursors = cursors; this.media = media; this.notifications=notifications;
+    public ForumService(ForumMapper mapper, ContentSupport support, ContentCursor cursors, MediaService media, NotificationService notifications, PostMetricsCache postMetrics) {
+        this(mapper, support, cursors, media, notifications, postMetrics, (ContentSecurityService) null);
+    }
+
+    @Autowired
+    public ForumService(ForumMapper mapper, ContentSupport support, ContentCursor cursors, MediaService media, NotificationService notifications, PostMetricsCache postMetrics, ObjectProvider<ContentSecurityService> contentSecurity) {
+        this(mapper, support, cursors, media, notifications, postMetrics, contentSecurity.getIfAvailable());
+    }
+
+    private ForumService(ForumMapper mapper, ContentSupport support, ContentCursor cursors, MediaService media, NotificationService notifications, PostMetricsCache postMetrics, ContentSecurityService contentSecurity) {
+        this.postMetrics = postMetrics; this.mapper = mapper; this.support = support; this.cursors = cursors; this.media = media; this.notifications=notifications; this.contentSecurity = contentSecurity;
     }
 
     public CursorPage<Map<String, Object>> list(String category, String sort, String keyword,
             String cursor, Integer size, AuthPrincipal principal) {
-        if (category != null && !Set.of("campus", "lost_found", "study", "help").contains(category)) invalid();
+        if (category != null && !Set.of("campus", "lost_found", "study", "help", "secondhand", "complain", "buddy").contains(category)) invalid();
         String order = sort == null ? "recommended" : sort;
         if (!Set.of("recommended", "latest").contains(order)) invalid();
         String query = ContentSupport.keyword(keyword);
@@ -79,6 +95,7 @@ public class ForumService {
         long owner = support.require(principal, "publish");
         validate(input);
         CreatePost normalized = new CreatePost(input.content().strip(), input.category(), List.copyOf(input.imageIds()), input.anonymous(), input.clientRequestId());
+        if (contentSecurity != null) contentSecurity.checkText(owner, ContentScene.FORUM, normalized.content());
         byte[] hash = ContentSupport.hash(normalized);
         // 同一作者的请求标识在事务内串行检查，重试不重新绑定图片。
         mapper.lockUser(owner);
@@ -95,6 +112,7 @@ public class ForumService {
     public Map<String, Object> update(long id, UpdatePost input, AuthPrincipal principal) {
         long owner = support.require(principal, "publish");
         validate(input);
+        if (input.content() != null && contentSecurity != null) contentSecurity.checkText(owner, ContentScene.FORUM, input.content().strip());
         PostRow post = requirePost(id, true);
         if (post.authorId() != owner) throw new BusinessException(ErrorCode.FORBIDDEN);
         if (post.deletedAt() != null) throw new BusinessException(ErrorCode.STATE_CONFLICT);
@@ -116,6 +134,7 @@ public class ForumService {
         if (post.deletedAt() != null) return map("deleted", true, "removedCommentCount", 0, "version", post.version());
         int removed = mapper.deletePostComments(id);
         mapper.deletePost(id);
+        postMetrics.invalidateAfterCommit(List.of(id));
         media.detach("post", id);
         return map("deleted", true, "removedCommentCount", removed, "version", post.version() + 1);
     }
@@ -127,7 +146,7 @@ public class ForumService {
         PostRow post = mapper.lockPost(id);
         if (add && !isPublic(post)) unavailable();
         int changed = add ? mapper.addLike(viewer, "post", id) : mapper.removeLike(viewer, "post", id);
-        if(changed>0)notifications.reaction("post",id,viewer,"post_like",add);
+        if(changed>0) { notifications.reaction("post",id,viewer,"post_like",add); postMetrics.invalidateAfterCommit(List.of(id)); }
         return map("liked", add, "likeCount", mapper.likes("post", id), "changed", changed > 0);
     }
 
@@ -198,6 +217,7 @@ public class ForumService {
         notifications.prepareComment(id,replyId,principal);
         long owner = support.require(principal, "comment");
         CreateComment normalized = new CreateComment(input.content().strip(), replyId == null ? null : replyId.toString(), input.clientRequestId());
+        if (contentSecurity != null) contentSecurity.checkText(owner, ContentScene.COMMENT, normalized.content());
         byte[] hash = ContentSupport.hash(map("postId", Long.toString(id), "input", normalized));
         mapper.lockUser(owner);
         CommentRow previous = mapper.requestedComment(owner, input.clientRequestId());
@@ -216,6 +236,7 @@ public class ForumService {
             if (!visible(root) || root.rootId() != null || !"post".equals(root.targetType()) || root.targetId() != id) invalidReply();
         }
         mapper.insertComment(id, owner, rootId, replyId, normalized, hash);
+        postMetrics.invalidateAfterCommit(List.of(id));
         notifications.comment(mapper.requestedComment(owner,input.clientRequestId()).id());
         return commentResult(mapper.requestedComment(owner, input.clientRequestId()), post, owner);
     }
@@ -230,6 +251,7 @@ public class ForumService {
         if (comment.authorId() != owner) throw new BusinessException(ErrorCode.FORBIDDEN);
         ContentSupport.version(comment.version(), version);
         int removed = comment.deletedAt() == null ? mapper.deleteComment(id) : 0;
+        if (removed > 0) postMetrics.invalidateAfterCommit(List.of(comment.targetId()));
         return map("deleted", true, "removedCount", removed, "postCommentCount", mapper.commentCount(comment.targetId()),
                 "version", comment.version() + (removed > 0 ? 1 : 0));
     }
@@ -276,15 +298,20 @@ public class ForumService {
         List<Long> ids = rows.stream().map(PostRow::id).toList();
         var images = media.images("post", ids, support.viewer(principal)==null?null:principal);
         var users = support.users(rows.stream().filter(row -> !row.anonymous()).map(PostRow::authorId).distinct().toList());
-        var metrics = mapper.postMetrics(ids, viewer).stream().collect(Collectors.toMap(PostMetric::id, Function.identity()));
+        // Only the two public numbers are shared. Identity, visibility and image grants remain live.
+        var counts = postMetrics.get(ids, missing -> mapper.publicPostMetrics(missing).stream().collect(
+                Collectors.toMap(PublicPostMetric::id, row -> new PostMetricsCache.Counts(row.likeCount(), row.commentCount()))));
+        var states = mapper.postViewerStates(ids, viewer).stream().collect(Collectors.toMap(PostViewerState::id, Function.identity()));
         List<Map<String, Object>> result = new ArrayList<>();
         for (PostRow row : rows) {
-            var metric = metrics.get(row.id());
+            var metric = counts.get(row.id());
+            var state = states.get(row.id());
+            if (metric == null || state == null) throw new IllegalStateException("帖子计数或互动状态读取失败");
             boolean mine = Objects.equals(viewer, row.authorId());
             var view = map("id", Long.toString(row.id()), "category", row.category(), "content", row.deletedAt() == null ? row.content() : null,
                     "images", images.getOrDefault(row.id(), List.of()), "author", author(row.authorId(), row, users),
                     "createdAt", row.createdAt(), "likeCount", metric.likeCount(), "commentCount", isPublic(row) ? metric.commentCount() : 0L,
-                    "liked", metric.liked(), "favorited", metric.favorited(), "isMine", mine, "version", row.version());
+                    "liked", state.liked(), "favorited", state.favorited(), "isMine", mine, "version", row.version());
             if (detail) view.put("permissions", map("canDelete", mine && row.deletedAt() == null, "canComment", isPublic(row)));
             if (ownerDetail && mine) {
                 view.put("availability", row.deletedAt() != null ? "deleted" : "hidden".equals(row.status()) ? "hidden" : "pending".equals(row.reviewState()) ? "pending" : "available");
@@ -351,7 +378,7 @@ public class ForumService {
     private static void requestId(String value) { if (value == null || !value.matches("[\\x21-\\x7E]{1,64}")) invalid(); }
     private static void validate(CreatePost input) {
         if (input == null || input.content() == null || input.content().isBlank() || input.content().length() > 2000
-                || input.category() == null || !Set.of("campus", "lost_found", "study", "help").contains(input.category())
+                || input.category() == null || !Set.of("campus", "lost_found", "study", "help", "secondhand", "complain", "buddy").contains(input.category())
                 || input.imageIds() == null || input.imageIds().size() > 9 || input.anonymous() == null) invalid();
         requestId(input.clientRequestId());
         if (new HashSet<>(input.imageIds()).size() != input.imageIds().size()) invalid();
@@ -365,7 +392,7 @@ public class ForumService {
         if (input == null || input.expectedVersion() == null || input.expectedVersion() < 0
                 || input.content() == null && input.category() == null && input.imageIds() == null) invalid();
         if (input.content() != null && (input.content().isBlank() || input.content().length() > 2000)) invalid();
-        if (input.category() != null && !Set.of("campus", "lost_found", "study", "help").contains(input.category())) invalid();
+        if (input.category() != null && !Set.of("campus", "lost_found", "study", "help", "secondhand", "complain", "buddy").contains(input.category())) invalid();
         if (input.imageIds() != null) {
             if (input.imageIds().size() > 9 || new HashSet<>(input.imageIds()).size() != input.imageIds().size()) invalid();
             input.imageIds().forEach(ContentSupport::id);

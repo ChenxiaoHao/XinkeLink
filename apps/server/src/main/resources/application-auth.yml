@@ -1,6 +1,86 @@
 xinkelink:
+  ai:
+    allowed-hosts: ${XINKELINK_AI_ALLOWED_HOSTS:}
+    settings-key: ${XINKELINK_AI_SETTINGS_KEY_BASE64:}
+    chat:
+      url: ${XINKELINK_AI_CHAT_URL:}
+      key: ${XINKELINK_AI_CHAT_KEY:}
+      model: ${XINKELINK_AI_CHAT_MODEL:}
+      enable-thinking: ${XINKELINK_AI_CHAT_ENABLE_THINKING:}
+    embedding:
+      url: ${XINKELINK_AI_EMBEDDING_URL:}
+      key: ${XINKELINK_AI_EMBEDDING_KEY:}
+      model: ${XINKELINK_AI_EMBEDDING_MODEL:}
+    rerank:
+      url: ${XINKELINK_AI_RERANK_URL:}
+      key: ${XINKELINK_AI_RERANK_KEY:}
+      model: ${XINKELINK_AI_RERANK_MODEL:}
+    input-chars: ${XINKELINK_AI_INPUT_CHARS:1000}
+    context-chars: ${XINKELINK_AI_CONTEXT_CHARS:6000}
+    output-chars: ${XINKELINK_AI_OUTPUT_CHARS:8000}
+    output-tokens: ${XINKELINK_AI_OUTPUT_TOKENS:1200}
+    timeout-seconds: ${XINKELINK_AI_TIMEOUT_SECONDS:25}
+    requests-per-minute: ${XINKELINK_AI_REQUESTS_PER_MINUTE:6}
+    global-concurrency: ${XINKELINK_AI_GLOBAL_CONCURRENCY:2}
+  statistics:
+    enabled: ${XINKELINK_VIEW_ENABLED:false}
+    publisher-enabled: ${XINKELINK_VIEW_PUBLISHER_ENABLED:${XINKELINK_VIEW_ENABLED:false}}
+    consumer-enabled: ${XINKELINK_VIEW_CONSUMER_ENABLED:${XINKELINK_VIEW_ENABLED:false}}
+    projection-enabled: ${XINKELINK_VIEW_PROJECTION_ENABLED:${XINKELINK_VIEW_ENABLED:false}}
+    bootstrap-servers: ${XINKELINK_VIEW_BOOTSTRAP_SERVERS:127.0.0.1:39092}
+    topic: ${XINKELINK_VIEW_TOPIC:xl_post_views_dev_v1}
+    consumer-group: ${XINKELINK_VIEW_CONSUMER_GROUP:xl_post_views_dev_v1}
+    namespace: ${XINKELINK_VIEW_NAMESPACE:dev}
+    batch-size: ${XINKELINK_VIEW_BATCH_SIZE:16}
+    poll-millis: ${XINKELINK_VIEW_POLL_MILLIS:500}
+    projection-millis: ${XINKELINK_VIEW_PROJECTION_MILLIS:5000}
+    lease-millis: ${XINKELINK_VIEW_LEASE_MILLIS:60000}
+    send-timeout-millis: ${XINKELINK_VIEW_SEND_TIMEOUT_MILLIS:3000}
+  notification:
+    mq:
+      enabled: ${XINKELINK_NOTIFICATION_MQ_ENABLED:false}
+      # Independently keep workers enabled while switching new business back to sync, to drain prior intent.
+      publisher-enabled: ${XINKELINK_NOTIFICATION_MQ_PUBLISHER_ENABLED:${XINKELINK_NOTIFICATION_MQ_ENABLED:false}}
+      consumer-enabled: ${XINKELINK_NOTIFICATION_MQ_CONSUMER_ENABLED:${XINKELINK_NOTIFICATION_MQ_ENABLED:false}}
+      namesrv-addr: ${XINKELINK_NOTIFICATION_MQ_NAMESRV_ADDR:127.0.0.1:9876}
+      topic: ${XINKELINK_NOTIFICATION_MQ_TOPIC:xl_interactions_dev_v1}
+      consumer-group: ${XINKELINK_NOTIFICATION_MQ_CONSUMER_GROUP:xl_notifications_dev_v1}
+      batch-size: ${XINKELINK_NOTIFICATION_MQ_BATCH_SIZE:16}
+      poll-millis: ${XINKELINK_NOTIFICATION_MQ_POLL_MILLIS:500}
+      lease-millis: ${XINKELINK_NOTIFICATION_MQ_LEASE_MILLIS:60000}
+      send-timeout-millis: ${XINKELINK_NOTIFICATION_MQ_SEND_TIMEOUT_MILLIS:3000}
+      max-attempts: ${XINKELINK_NOTIFICATION_MQ_MAX_ATTEMPTS:12}
+      retry-initial-millis: ${XINKELINK_NOTIFICATION_MQ_RETRY_INITIAL_MILLIS:1000}
+      retry-max-millis: ${XINKELINK_NOTIFICATION_MQ_RETRY_MAX_MILLIS:60000}
+      max-reconsume-times: ${XINKELINK_NOTIFICATION_MQ_MAX_RECONSUME_TIMES:5}
+  cache:
+    post-metrics:
+      enabled: ${XINKELINK_POST_METRICS_CACHE_ENABLED:true}
+      ttl-seconds: ${XINKELINK_POST_METRICS_CACHE_TTL_SECONDS:20}
+      jitter-seconds: ${XINKELINK_POST_METRICS_CACHE_JITTER_SECONDS:10}
+      cdc:
+        enabled: ${XINKELINK_POST_METRICS_CDC_ENABLED:false}
+        host: ${XINKELINK_POST_METRICS_CDC_HOST:127.0.0.1}
+        port: ${XINKELINK_POST_METRICS_CDC_PORT:11111}
+        destination: ${XINKELINK_POST_METRICS_CDC_DESTINATION:post_metrics}
+        username: ${XINKELINK_POST_METRICS_CDC_USERNAME:}
+        password: ${XINKELINK_POST_METRICS_CDC_PASSWORD:}
+        schema: ${XINKELINK_POST_METRICS_CDC_SCHEMA:}
+        checkpoint: ${XINKELINK_POST_METRICS_CDC_CHECKPOINT:}
+        batch-size: ${XINKELINK_POST_METRICS_CDC_BATCH_SIZE:512}
+        poll-millis: ${XINKELINK_POST_METRICS_CDC_POLL_MILLIS:500}
+        timeout-millis: ${XINKELINK_POST_METRICS_CDC_TIMEOUT_MILLIS:5000}
+        retry-initial-millis: ${XINKELINK_POST_METRICS_CDC_RETRY_INITIAL_MILLIS:250}
+        retry-max-millis: ${XINKELINK_POST_METRICS_CDC_RETRY_MAX_MILLIS:5000}
+      l1:
+        enabled: ${XINKELINK_POST_METRICS_L1_ENABLED:true}
+        maximum-size: ${XINKELINK_POST_METRICS_L1_MAXIMUM_SIZE:10000}
+        ttl-millis: ${XINKELINK_POST_METRICS_L1_TTL_MILLIS:2000}
   storage:
     provider: ${XINKELINK_IMAGE_STORAGE:local}
+  content-security:
+    wechat-enabled: ${XINKELINK_WECHAT_CONTENT_CHECK_ENABLED:false}
+    fail-open: ${XINKELINK_WECHAT_CONTENT_CHECK_FAIL_OPEN:false}
   auth:
     jwt:
       secret-base64: ${XINKELINK_JWT_SECRET_BASE64}

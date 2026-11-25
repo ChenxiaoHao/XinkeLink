@@ -4,7 +4,11 @@ import cn.xinkelink.auth.*;
 import cn.xinkelink.auth.persistence.AuthMapper;
 import cn.xinkelink.common.api.*;
 import cn.xinkelink.content.ContentSupport;
+import cn.xinkelink.content.security.ContentScene;
+import cn.xinkelink.content.security.ContentSecurityService;
 import cn.xinkelink.media.MediaService;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -15,14 +19,18 @@ import static cn.xinkelink.content.ContentSupport.map;
 
 @Service @Profile("auth")
 public class ProfileService {
-    private final JdbcTemplate jdbc;private final ContentSupport support;private final AuthMapper mapper;private final AuthService auth;private final MediaService media;
-    public ProfileService(JdbcTemplate jdbc,ContentSupport support,AuthMapper mapper,AuthService auth,MediaService media) {this.jdbc=jdbc;this.support=support;this.mapper=mapper;this.auth=auth;this.media=media;}
+    private final JdbcTemplate jdbc;private final ContentSupport support;private final AuthMapper mapper;private final AuthService auth;private final MediaService media;private final ContentSecurityService contentSecurity;
+    public ProfileService(JdbcTemplate jdbc,ContentSupport support,AuthMapper mapper,AuthService auth,MediaService media) {this(jdbc,support,mapper,auth,media,(ContentSecurityService)null);}
+    @Autowired
+    public ProfileService(JdbcTemplate jdbc,ContentSupport support,AuthMapper mapper,AuthService auth,MediaService media,ObjectProvider<ContentSecurityService> contentSecurity) {this(jdbc,support,mapper,auth,media,contentSecurity.getIfAvailable());}
+    private ProfileService(JdbcTemplate jdbc,ContentSupport support,AuthMapper mapper,AuthService auth,MediaService media,ContentSecurityService contentSecurity) {this.jdbc=jdbc;this.support=support;this.mapper=mapper;this.auth=auth;this.media=media;this.contentSecurity=contentSecurity;}
     @Transactional
     public AuthModels.Me update(JsonNode input,AuthPrincipal principal) {
         long id=support.require(principal,null);check(input,Set.of("nickname","bio","major","className","enrollmentYear","avatarImageId","expectedVersion"));
         var current=mapper.findUser(id);ContentSupport.version(current.version(),version(input));
         String nickname=text(input,"nickname",current.nickname(),20,false),bio=text(input,"bio",current.bio(),40,true),
                 major=text(input,"major",current.major(),60,true),className=text(input,"className",current.className(),40,true),year=current.enrollmentYear();
+        if(contentSecurity!=null)contentSecurity.checkText(id,ContentScene.PROFILE,nickname,bio,major,className);
         if(input.has("enrollmentYear")){year=input.get("enrollmentYear").isNull()?null:text(input,"enrollmentYear",year,4,false);if(year!=null&&!year.matches("(19|20)[0-9]{2}"))throw invalid();}
         Long avatar=current.avatarImageId();
         if(input.has("avatarImageId"))avatar=input.get("avatarImageId").isNull()?null:ContentSupport.id(text(input,"avatarImageId",null,19,false));

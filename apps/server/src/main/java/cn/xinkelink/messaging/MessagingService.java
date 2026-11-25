@@ -4,8 +4,12 @@ import cn.xinkelink.auth.AuthPrincipal;
 import cn.xinkelink.common.api.*;
 import cn.xinkelink.content.ContentCursor;
 import cn.xinkelink.content.ContentSupport;
+import cn.xinkelink.content.security.ContentScene;
+import cn.xinkelink.content.security.ContentSecurityService;
 import cn.xinkelink.notification.NotificationService;
 import cn.xinkelink.realtime.RealtimeEvents;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,9 +30,19 @@ public class MessagingService {
     private final ContentCursor cursors;
     private final NotificationService notifications;
     private final RealtimeEvents events;
+    private final ContentSecurityService contentSecurity;
     public MessagingService(MessagingStore store,ContentSupport support,ContentCursor cursors,
             NotificationService notifications,RealtimeEvents events){
-        this.store=store;this.support=support;this.cursors=cursors;this.notifications=notifications;this.events=events;
+        this(store,support,cursors,notifications,events,(ContentSecurityService)null);
+    }
+    @Autowired
+    public MessagingService(MessagingStore store,ContentSupport support,ContentCursor cursors,
+            NotificationService notifications,RealtimeEvents events,ObjectProvider<ContentSecurityService> contentSecurity){
+        this(store,support,cursors,notifications,events,contentSecurity.getIfAvailable());
+    }
+    private MessagingService(MessagingStore store,ContentSupport support,ContentCursor cursors,
+            NotificationService notifications,RealtimeEvents events,ContentSecurityService contentSecurity){
+        this.store=store;this.support=support;this.cursors=cursors;this.notifications=notifications;this.events=events;this.contentSecurity=contentSecurity;
     }
 
     @Transactional(readOnly=true)
@@ -102,6 +116,7 @@ public class MessagingService {
         if(body==null||body.text()==null||body.text().strip().isEmpty()||body.text().strip().length()>1000
                 ||body.clientMessageId()==null||!body.clientMessageId().matches("[\\x21-\\x7E]{1,64}"))throw invalid();
         String text=body.text().strip();
+        if(contentSecurity!=null)contentSecurity.checkText(user,ContentScene.MESSAGE,text);
         byte[] hash=ContentSupport.hash(map("conversationId",Long.toString(id),"text",text));
         Conversation row=member(id,user,true);
         // 发送者账号行锁串行化同主体的幂等键；原消息优先于当前屏蔽变化。
