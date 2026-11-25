@@ -81,6 +81,9 @@ xinkelink:
   content-security:
     wechat-enabled: ${XINKELINK_WECHAT_CONTENT_CHECK_ENABLED:false}
     fail-open: ${XINKELINK_WECHAT_CONTENT_CHECK_FAIL_OPEN:false}
+    media-check-enabled: ${XINKELINK_WECHAT_MEDIA_CHECK_ENABLED:false}
+    callback-token: ${XINKELINK_WECHAT_CALLBACK_TOKEN:}
+    public-base-url: ${XINKELINK_PUBLIC_BASE_URL:}
   auth:
     jwt:
       secret-base64: ${XINKELINK_JWT_SECRET_BASE64}

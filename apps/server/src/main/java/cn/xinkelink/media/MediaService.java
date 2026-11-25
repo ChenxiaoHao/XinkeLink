@@ -4,7 +4,10 @@ import cn.xinkelink.auth.AuthPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import cn.xinkelink.common.api.BusinessException;
 import cn.xinkelink.common.api.ErrorCode;
+import cn.xinkelink.content.security.WechatMediaReviewService;
 import cn.xinkelink.media.persistence.MediaMapper;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import cn.xinkelink.storage.ImageStorage;
 import cn.xinkelink.storage.ImageUpload;
 import cn.xinkelink.storage.StoredImage;
@@ -42,10 +45,20 @@ public class MediaService {
     private final MediaGrant grants;
     private final Clock clock;
     private final TransactionTemplate transactions;
+    private final WechatMediaReviewService mediaReview;
     public MediaService(MediaMapper mapper, ImageStorage storage, MediaContentReader reader, MediaGrant grants,
                         Clock clock, PlatformTransactionManager transactionManager) {
+        this(mapper, storage, reader, grants, clock, transactionManager, (WechatMediaReviewService) null);
+    }
+    @Autowired
+    public MediaService(MediaMapper mapper, ImageStorage storage, MediaContentReader reader, MediaGrant grants,
+                        Clock clock, PlatformTransactionManager transactionManager, ObjectProvider<WechatMediaReviewService> mediaReview) {
+        this(mapper, storage, reader, grants, clock, transactionManager, mediaReview.getIfAvailable());
+    }
+    private MediaService(MediaMapper mapper, ImageStorage storage, MediaContentReader reader, MediaGrant grants,
+                        Clock clock, PlatformTransactionManager transactionManager, WechatMediaReviewService mediaReview) {
         this.mapper = mapper; this.storage = storage; this.reader = reader; this.grants = grants;
-        this.clock = clock; this.transactions = new TransactionTemplate(transactionManager);
+        this.clock = clock; this.transactions = new TransactionTemplate(transactionManager); this.mediaReview = mediaReview;
         this.avatarBytes = Caffeine.newBuilder()
                 .maximumWeight(16 * 1024 * 1024)
                 .weigher((String key, byte[] bytes) -> Math.max(bytes.length, 1024))
@@ -72,7 +85,14 @@ public class MediaService {
                         sha256(safe), clock.instant().plusSeconds(86400));
                 return mapper.byKey(result.key());
             });
-            return meta(Objects.requireNonNull(asset));
+            Asset saved = Objects.requireNonNull(asset);
+            if (mediaReview != null && mediaReview.isEnabled() && ("post".equals(purpose) || "avatar".equals(purpose))) {
+                try {
+                    Map<String, Object> grant = access(saved, null, "temporary", owner);
+                    mediaReview.submitImageCheck(owner.subjectId(), saved.id(), purpose, String.valueOf(grant.get("url")));
+                } catch (RuntimeException ignored) { /* 异步图片审核提交失败不阻断上传主链路，由日志与人工举报兜底。 */ }
+            }
+            return meta(saved);
         } catch (IOException exception) {
             cleanup(stored); throw new BusinessException(ErrorCode.STORAGE_UNAVAILABLE);
         } catch (RuntimeException exception) { cleanup(stored); throw exception; }

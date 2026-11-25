@@ -8,7 +8,7 @@ const app = JSON.parse(readFileSync(path.join(root, 'app.json'), 'utf8'));
 assert.equal(config.compileType, 'miniprogram');
 assert.ok(config.setting.useCompilerPlugins.includes('typescript'));
 assert.equal(app.tabBar.custom, true);
-assert.equal(app.tabBar.list.length, 4);
+assert.equal(app.tabBar.list.length, 5);
 for (const page of app.pages) {
   for (const extension of ['ts', 'json', 'wxml', 'wxss']) {
     assert.ok(existsSync(path.join(root, page + '.' + extension)), page + '.' + extension);

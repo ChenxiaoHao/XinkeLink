@@ -2,7 +2,7 @@
 
 - **日期**：2026-11-25
 - **执行方**：Antigravity (Gemini)
-- **当前状态**：三端自动化测试 **859 / 859 全部通过**（0 失败 / 0 跳过），未执行 `git commit` / `git push`，所有变更保留在工作区等待分批提交。
+- **当前状态**：三端自动化测试 **865 / 865 全部通过**（0 失败 / 0 跳过），已同步推送至 GitHub `main` 分支（`https://github.com/ChenxiaoHao/XinkeLink`）。
 
 ---
 
@@ -71,64 +71,49 @@
 
 | 模块 | 命令 | 结果 |
 | --- | --- | --- |
-| 后端 (`apps/server`) | `mvn test` | **✅ 389 / 389 通过**（0 失败 / 0 错误 / 0 跳过） |
+| 后端 (`apps/server`) | `mvn test` | **✅ 394 / 394 通过**（0 失败 / 0 错误 / 0 跳过） |
 | 管理后台 (`apps/admin`) | `npm run check` | **✅ 100 / 100 通过** + `vue-tsc` + Vite 生产构建成功 |
-| 小程序 (`apps/miniprogram`) | `npm run check` | **✅ 370 / 370 通过** + `tsc` + `check:project` 通过 |
-| **合计** | — | **859 / 859 全部通过** |
+| 小程序 (`apps/miniprogram`) | `npm run check` | **✅ 371 / 371 通过** + `tsc` + `check:project` 通过 |
+| **合计** | — | **865 / 865 全部通过** |
 
-> 注：本次未在隔离 MySQL 上重跑 `mvn -Pdb-integration verify`，也未在微信开发者工具执行真机网络联调。
-
----
-
-## 三、建议的分批 Git 提交命令（请人工复核后执行）
-
-```bash
-# 1. 绑定私有远程仓库（如尚未绑定）
-# git remote add origin <你的私有仓库地址>
-
-# 2. 第 1 批：后端历史功能与本次内容安全
-git add apps/server/src/main/java/cn/xinkelink/content/security \
-        apps/server/src/test/java/cn/xinkelink/content/security \
-        apps/server/src/main/java/cn/xinkelink/common/api/ErrorCode.java \
-        apps/server/src/main/java/cn/xinkelink/forum/ForumService.java \
-        apps/server/src/main/java/cn/xinkelink/messaging/MessagingService.java \
-        apps/server/src/main/java/cn/xinkelink/profile/ProfileService.java \
-        apps/server/src/main/java/cn/xinkelink/settings/SettingsService.java \
-        apps/server/src/main/resources/application-auth.yml
-git commit -m "feat(server): add real sensitive word filter and WeChat msgSecCheck"
-
-# 3. 第 2 批：小程序 V1.0 提审合规、4 栏导航与打包瘦身
-git add apps/miniprogram/project.config.json \
-        apps/miniprogram/scripts/check-project.cjs \
-        apps/miniprogram/miniprogram/app.json \
-        apps/miniprogram/miniprogram/app.ts \
-        apps/miniprogram/miniprogram/utils/navigation.ts \
-        apps/miniprogram/miniprogram/components/app-shell \
-        apps/miniprogram/miniprogram/components/profile-auth-sheet \
-        apps/miniprogram/miniprogram/pages/legal \
-        apps/miniprogram/tests/x-shell.test.cjs \
-        apps/miniprogram/tests/legal-compliance.test.cjs
-git commit -m "feat(miniprogram): add legal/privacy pages, hide Link AI tab, exclude mock assets"
-
-# 4. 第 3 批：生产部署套装与交接文档
-git add deploy/ docs/handover-to-codex-20261125.md
-git commit -m "chore(deploy): add production Nginx/systemd/env kit and handover report"
-
-# 5. 第 4 批：其余历史未提交改动（V10-V20 迁移、Link AI、浏览统计、管理后台等）
-git status
-# 核对无敏感文件后按模块或统一提交并推送远程备份，上线前打 tag：
-# git tag -a v1.0.0-rc1 -m "V1.0.0 launch candidate"
-```
+> 注：未在隔离 MySQL 上重跑 `mvn -Pdb-integration verify`；Link AI Tab 已按用户要求临时恢复为 5 栏以便真机测试（提审前若不开 AI 可按 `app.json` + `utils/navigation.ts` 再隐藏）。
 
 ---
 
-## 四、交接给 Codex / 备案通过后的剩余待办
+## 三、新增完成：自助账号软注销 + 微信图片异步审核 (`mediaCheckAsync`)
 
-1. **Git 基线与安全审计**：按上述分批命令完成提交、推送远程仓库；如需，补充跑一次 `mvn -Pdb-integration verify`（注意测试数据不要命中 `SettingsService` 默认敏感词）。
-2. **可选增强（视微信审核类目与时间决定）**：
-   - 如需更严格的图片风控，可基于本次 `OfficialWechatContentSecurityClient` 的 `stable_token` 机制扩展 `mediaCheckAsync` 异步回调；
-   - 如需自助账号注销，可补充软注销接口并在 `app-shell` 退出登录旁挂载入口。
-3. **备案通过后上线步骤**（严格按 `deploy/DEPLOY.md` 执行）：
-   - 部署 MySQL 8.4 / Redis 7 / OSS / Nginx HTTPS & WSS / systemd；
-   - 微信公众平台配置合法域名与《用户隐私保护指引》；
-   - 将 `apps/miniprogram/miniprogram/backend/config.ts` 中 `BACKEND_ORIGIN` 改为正式 `https://` 域名，真机验收体验版全链路后提交审核。
+### 1. 自助账号软注销
+- **后端接口**：`POST /api/v1/me/deactivate`，请求体 `{ "confirmed": true }`，响应 `{ "deactivated": true }`。
+  - 文件：`ProfileController.java`、`ProfileService.java`
+  - 实现要点：
+    1. 校验登录用户与 `confirmed === true`，解绑用户头像（`media.bindAvatar(id, null)`）。
+    2. 软删除并脱敏 `xl_user`：`nickname='已注销用户'`、清空个人资料、`deleted_at=UTC_TIMESTAMP(3)`，同时将 `wechat_open_id` 改写为 `CONCAT('deactivated:', id, ':', LEFT(SHA2(CONCAT(wechat_open_id, ':', id), 256), 24))` 以释放原 `(wechat_app_id, wechat_open_id)` 唯一键占位，保留历史内容外键引用。
+    3. 一次性吊销 `xl_auth_session` 中该用户全部未吊销会话（`revoked_at=UTC_TIMESTAMP(3)`）。
+  - 单测：`ProfileDeactivateTest.java`（2/2 通过）。
+- **小程序端**：`components/app-shell/index.{wxml,ts}` 新增「注销账号」入口与二次确认弹窗，成功后调用 `api.clear()` 清空本地会话并刷新访客态（`tests/legal-compliance.test.cjs` 已覆盖）。
+
+### 2. 微信图片异步审核 (`media_check_async` v2 + 回调自动隐藏)
+- **后端发起与回调**：
+  - `OfficialWechatContentSecurityClient.checkImageAsync`：复用 `stable_token` 缓存与 40001/42001 刷新重试，调用 `wxa/media_check_async` 返回 `trace_id`。
+  - `WechatMediaReviewService.java`：
+    - `submitImageCheck`：在 `MediaService.upload` 保存 `post`/`avatar` 图片后异步提交检测，将 `trace_id -> imageId` 存入 Redis（`xinkelink:wechat:media_trace:{traceId}`，TTL 24h）。
+    - `verifySignature`：使用 `XINKELINK_WECHAT_CALLBACK_TOKEN` 做 SHA-1 常量时间签名校验。
+    - `handleCallback`：收到 `wxa_media_check` 且 `result.suggest != "pass"` 时，按 `xl_image_ref` 自动隐藏关联帖子（`status='hidden', review_state='pending'` 进入管理后台待复核队列）或清除违规用户头像（`avatar_image_id=NULL`）。
+  - `WechatMediaCallbackController.java`：提供 `GET`（URL 验证）与 `POST`（回调接收）`/api/v1/webhooks/wechat/media-check`，已在 `SecurityConfiguration.java` 放行并豁免 CSRF（依赖微信 SHA-1 签名验权）。
+  - 新增配置项（`application-auth.yml` & `deploy/env/xinkelink.env.example`）：
+    - `XINKELINK_WECHAT_MEDIA_CHECK_ENABLED`（默认 `false`，生产设 `true`）
+    - `XINKELINK_WECHAT_CALLBACK_TOKEN`
+    - `XINKELINK_PUBLIC_BASE_URL`
+  - 单测：`WechatMediaReviewServiceTest.java`（3/3 通过）。
+
+---
+
+## 四、请 Codex 重点复核的后端清单（Review Checklist）
+
+请 Codex 重点审查以下 6 个后端风险点：
+1. **并发与锁序**：`ContentSecurityService.checkText` 放在 `ForumService` / `MessagingService` DB 行锁之前，确认不会引发幂等重试逻辑顺序问题（例如同 `clientRequestId` 重试时若敏感词表已变更的行为）。
+2. **`xl_user` 软注销 SQL 与 MySQL 8.4 兼容性**：确认 `ProfileService.deactivate` 中 `SHA2(CONCAT(wechat_open_id, ':', id), 256)` 与 `ascii_bin` 字符集/CHECK 约束及运行账号最小权限（`UPDATE xl_user`、`UPDATE xl_auth_session`）完全兼容。
+3. **微信图片审核回调时序**：如果用户在 `MediaService.upload` 后尚未点击「发布帖子」（图片还处于 `temporary` 未写入 `xl_image_ref`），微信极快回调 `risky` 时当前 `handleCallback` 查不到 `xl_image_ref`；如要求“先审后公开”强约束，可由 Codex 决定是否需要增加 `xl_image` 审核状态列（需同步更新 `database-table-contract.json` 与 Flyway V21）。
+4. **Redis 不可用降级**：`OfficialWechatContentSecurityClient` 和 `WechatMediaReviewService` 在 Redis 故障时的降级行为是否符合预期；`stable_token` 高并发下的缓存击穿是否需要互斥锁。
+5. **隔离数据库集成测试**：建议在隔离库跑一次 `mvn -Pdb-integration verify`，确认 `SettingsService` 默认敏感词不误伤既有集成测试用例，且新增路由符合既有 API 契约测试（若有路由总数断言需同步更新）。
+6. **备案通过后上线步骤**：按 `deploy/DEPLOY.md` 部署 MySQL / Redis / OSS / Nginx HTTPS & WSS / systemd，在微信后台配置合法域名、隐私指引与消息推送回调 URL（`/api/v1/webhooks/wechat/media-check`），切 `BACKEND_ORIGIN` 正式域名后真机验收提审。

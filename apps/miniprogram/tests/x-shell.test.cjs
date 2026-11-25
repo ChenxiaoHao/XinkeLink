@@ -4,9 +4,9 @@ const { loadComponent } = require('./native-harness.cjs');
 const { TABS } = require('../.test-dist/utils/navigation');
 const { loadPage } = require('./page-harness.cjs');
 
-test('four primary destinations keep discovery and both inboxes independent for v1 launch', () => {
-  assert.deepEqual(TABS.map(x => x.key), ['forum', 'search', 'notifications', 'contact']);
-  assert.equal(new Set(TABS.map(x => x.url)).size, 4);
+test('five primary destinations keep discovery, AI and both inboxes independent', () => {
+  assert.deepEqual(TABS.map(x => x.key), ['forum', 'search', 'ai', 'notifications', 'contact']);
+  assert.equal(new Set(TABS.map(x => x.url)).size, 5);
 });
 test('profile drawer opens and closes without navigating', () => {
   const { instance } = loadComponent('components/app-shell/index.js');

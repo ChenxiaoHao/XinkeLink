@@ -41,6 +41,10 @@
         "text": "搜索"
       },
       {
+        "pagePath": "pages/ai/index",
+        "text": "Link AI"
+      },
+      {
         "pagePath": "pages/notifications/index",
         "text": "通知"
       },

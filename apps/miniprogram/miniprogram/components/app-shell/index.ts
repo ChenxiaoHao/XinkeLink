@@ -146,6 +146,27 @@ Component({
     client(wx).logout().catch(()=>{}).then(()=>{this.setData({loggedIn:false,busy:false});this.refreshIdentity()})
    }})
   },
+  onDeactivateTap(){
+   if(this.data.busy)return
+   wx.showModal({title:'确认注销账号？',content:'注销后将清空个人资料并退出所有登录会话，历史公开内容将显示为「已注销用户」，且无法恢复原账号资料。',confirmText:'确认注销',confirmColor:'#F4212E',success:result=>{
+    if(!result.confirm)return
+    if((wx as Runtime).__fixtureMode===true){
+     try{setLocalSession(wx,false);this.setData({loggedIn:false});this.refreshIdentity();wx.showToast({title:'演示账号已退出',icon:'none'})}catch{wx.showToast({title:'操作未完成，请重试',icon:'none'})}
+     return
+    }
+    this.setData({busy:true})
+    const api=client(wx)
+    api.request('/me/deactivate','POST',{confirmed:true}).then(()=>{
+     api.clear()
+     this.setData({loggedIn:false,busy:false})
+     this.refreshIdentity()
+     wx.showToast({title:'账号已注销',icon:'none'})
+    }).catch((error:unknown)=>{
+     this.setData({busy:false})
+     wx.showToast({title:error instanceof Error?error.message:'注销失败，请重试',icon:'none'})
+    })
+   }})
+  },
   openDrawer(){if(this.data.opened)return;this.setData({opened:true});this.setTabShift(true);void this.refreshIdentity()},
   closeDrawer(){if(!this.data.opened)return;this.setData({opened:false});this.setTabShift(false)},
   setTabShift(open:boolean){const pages=getCurrentPages();pages[pages.length-1]?.getTabBar?.()?.setData({drawerVisible:open});this.triggerEvent('drawerchange',{opened:open})},

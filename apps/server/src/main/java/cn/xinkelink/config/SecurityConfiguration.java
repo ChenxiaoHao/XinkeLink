@@ -52,11 +52,13 @@ public class SecurityConfiguration {
                 .csrf(csrf -> {
                     if (authEnabled) csrf.ignoringRequestMatchers(request -> AUTH_PUBLIC.contains(path(request))
                             || path(request).equals("/api/v1/auth/logout")
+                            || path(request).equals("/api/v1/webhooks/wechat/media-check")
                             || statisticsPost(request) || bearer(request));
                 })
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/v1/health", "/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
                     if (authEnabled) auth.requestMatchers(AUTH_PUBLIC.toArray(String[]::new)).permitAll();
+                    if (authEnabled) auth.requestMatchers("/api/v1/webhooks/wechat/media-check").permitAll();
                     if (authEnabled) auth.requestMatchers(HttpMethod.POST,"/api/v1/statistics/anonymous-credential","/api/v1/statistics/post-views").permitAll();
                     auth.requestMatchers("/api/v1/admin/**").hasRole("ADMIN");
                     if (authEnabled) auth.requestMatchers(HttpMethod.GET,"/api/v1/posts","/api/v1/posts/*",

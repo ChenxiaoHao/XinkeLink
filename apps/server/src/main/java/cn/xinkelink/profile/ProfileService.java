@@ -61,6 +61,29 @@ public class ProfileService {
         return preferences(principal);
     }
     @Transactional
+    public Map<String,Object> deactivate(JsonNode input,AuthPrincipal principal) {
+        long id=support.require(principal,null);
+        check(input,Set.of("confirmed"));
+        if(input==null||!input.has("confirmed")||!input.get("confirmed").isBoolean()||!input.get("confirmed").booleanValue())throw invalid();
+        var current=mapper.findUser(id);
+        if(current==null||current.deletedAt()!=null)throw new BusinessException(ErrorCode.UNAUTHENTICATED);
+        if(current.avatarImageId()!=null)media.bindAvatar(id,null);
+        // 软删除并脱敏个人资料，同时释放原 wechat_open_id 唯一键占位（保留历史内容外键引用并显示“已注销用户”）。
+        jdbc.update("""
+                UPDATE xl_user
+                SET nickname='已注销用户', avatar_image_id=NULL, bio='', major='', class_name='', enrollment_year=NULL,
+                    wechat_open_id=CONCAT('deactivated:', id, ':', LEFT(SHA2(CONCAT(wechat_open_id, ':', id), 256), 24)),
+                    deleted_at=UTC_TIMESTAMP(3), updated_at=UTC_TIMESTAMP(3), version=version+1
+                WHERE id=? AND deleted_at IS NULL
+                """,id);
+        jdbc.update("""
+                UPDATE xl_auth_session
+                SET revoked_at=UTC_TIMESTAMP(3), updated_at=UTC_TIMESTAMP(3), version=version+1
+                WHERE subject_type='user' AND subject_id=? AND revoked_at IS NULL
+                """,id);
+        return map("deactivated",true);
+    }
+    @Transactional
     public Map<String,Object> block(long target,boolean blocked,AuthPrincipal principal) {
         long id=support.require(principal,null);if(target==id)throw invalid();
         if(blocked){if(mapper.findUser(target)==null||mapper.findUser(target).deletedAt()!=null)throw new BusinessException(ErrorCode.NOT_FOUND);

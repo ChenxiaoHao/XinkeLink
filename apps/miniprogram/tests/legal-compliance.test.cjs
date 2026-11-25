@@ -42,3 +42,31 @@ test('app-shell privacy entry and profile-auth-sheet legal links navigate to leg
   sheet.onLegalTap({ currentTarget: { dataset: { tab: 'privacy' } } });
   assert.deepEqual(routes.slice(1), ['/pages/legal/index?tab=terms', '/pages/legal/index?tab=privacy']);
 });
+
+test('app-shell deactivate requests /me/deactivate after confirmation and clears session', async () => {
+  const storage = new Map([['xinkelink.backend.session.v1', {
+    accessToken: 'access', refreshToken: 'refresh', expiresAt: Date.now() + 600000,
+    me: { id: '29', nickname: '测试同学' },
+  }]]);
+  const calls = [];
+  const toasts = [];
+  const wx = {
+    getStorageSync: k => storage.get(k),
+    setStorageSync: (k, v) => storage.set(k, v),
+    removeStorageSync: k => storage.delete(k),
+    showModal(options) { options.success({ confirm: true }); },
+    showToast(options) { toasts.push(options.title); },
+    request(options) {
+      calls.push({ url: new URL(options.url).pathname, method: options.method, data: options.data });
+      options.success({ statusCode: 200, data: { code: 'OK', data: { deactivated: true } } });
+    },
+  };
+  const { instance } = loadComponent('components/app-shell/index.js', { fixture: false, wx });
+  instance.setData({ loggedIn: true });
+  instance.onDeactivateTap();
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(calls.some(c => c.url.endsWith('/me/deactivate') && c.method === 'POST' && c.data?.confirmed === true), true);
+  assert.equal(instance.data.loggedIn, false);
+  assert.ok(!storage.get('xinkelink.backend.session.v1'));
+  assert.ok(toasts.includes('账号已注销'));
+});

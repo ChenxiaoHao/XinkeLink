@@ -28,6 +28,7 @@ public final class OfficialWechatContentSecurityClient implements WechatContentS
     private static final Logger log = LoggerFactory.getLogger(OfficialWechatContentSecurityClient.class);
     private static final String TOKEN_ENDPOINT = "https://api.weixin.qq.com/cgi-bin/stable_token";
     private static final String CHECK_ENDPOINT = "https://api.weixin.qq.com/wxa/msg_sec_check";
+    private static final String MEDIA_CHECK_ENDPOINT = "https://api.weixin.qq.com/wxa/media_check_async";
     private static final Duration MIN_TOKEN_TTL = Duration.ofSeconds(60);
 
     private final WechatProperties wechat;
@@ -88,6 +89,75 @@ public final class OfficialWechatContentSecurityClient implements WechatContentS
         String suggest = response.path("result").path("suggest").asString("");
         if (!"pass".equalsIgnoreCase(suggest)) {
             throw new BusinessException(ErrorCode.CONTENT_REJECTED);
+        }
+    }
+
+    @Override
+    public java.util.Optional<String> checkImageAsync(String openId, ContentScene scene, String mediaUrl) {
+        if (!StringUtils.hasText(mediaUrl) || !StringUtils.hasText(openId)) {
+            return java.util.Optional.empty();
+        }
+        if (!StringUtils.hasText(wechat.appId()) || !StringUtils.hasText(wechat.appSecret())) {
+            log.warn("WeChat media_check_async skipped: wechat credentials not configured");
+            return java.util.Optional.empty();
+        }
+        String token = fetchToken(false);
+        if (!StringUtils.hasText(token)) {
+            log.warn("WeChat media_check_async failed to acquire access_token");
+            return java.util.Optional.empty();
+        }
+        JsonNode response = callMediaCheck(token, openId, scene, mediaUrl);
+        if (response == null) {
+            return java.util.Optional.empty();
+        }
+        int errcode = response.path("errcode").asInt(0);
+        if (errcode == 40001 || errcode == 42001) {
+            String refreshed = fetchToken(true);
+            if (!StringUtils.hasText(refreshed)) {
+                return java.util.Optional.empty();
+            }
+            response = callMediaCheck(refreshed, openId, scene, mediaUrl);
+            if (response == null) {
+                return java.util.Optional.empty();
+            }
+            errcode = response.path("errcode").asInt(0);
+        }
+        if (errcode != 0) {
+            log.warn("WeChat media_check_async returned errcode={}", errcode);
+            return java.util.Optional.empty();
+        }
+        String traceId = response.path("trace_id").asString("");
+        return StringUtils.hasText(traceId) ? java.util.Optional.of(traceId) : java.util.Optional.empty();
+    }
+
+    private JsonNode callMediaCheck(String accessToken, String openId, ContentScene scene, String mediaUrl) {
+        URI uri = UriComponentsBuilder.fromUriString(MEDIA_CHECK_ENDPOINT)
+                .queryParam("access_token", "{token}")
+                .encode()
+                .buildAndExpand(accessToken)
+                .toUri();
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("media_url", mediaUrl);
+        payload.put("media_type", 2);
+        payload.put("version", 2);
+        payload.put("scene", scene.code());
+        payload.put("openid", openId);
+        try {
+            String body = restClient.post()
+                    .uri(uri)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(json.writeValueAsString(payload))
+                    .retrieve()
+                    .body(String.class);
+            if (!StringUtils.hasText(body)) {
+                return null;
+            }
+            JsonNode node = json.readTree(body);
+            return node.isObject() ? node : null;
+        } catch (RestClientException | JacksonException ex) {
+            log.warn("WeChat media_check_async network/parse error");
+            return null;
         }
     }
 

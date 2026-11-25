@@ -41,6 +41,7 @@
       </view>
       <view wx:if="{{loggedIn}}" class="account-secondary">
         <button class="account-secondary-item" bindtap="onLogoutTap" hover-class="account-secondary-item--pressed">退出登录</button>
+        <button class="account-secondary-item account-secondary-item--danger" bindtap="onDeactivateTap" hover-class="account-secondary-item--pressed">注销账号</button>
       </view>
       <view class="account-footer">信科 Link · 校内论坛 · v1.0.0</view>
     </scroll-view>

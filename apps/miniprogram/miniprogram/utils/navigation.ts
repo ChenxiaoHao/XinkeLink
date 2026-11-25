@@ -2,6 +2,7 @@ export type TabKey = 'forum' | 'search' | 'ai' | 'notifications' | 'contact'
 export const TABS = [
   { key: 'forum', label: '首页', icon: 'house', url: '/pages/forum/index' },
   { key: 'search', label: '搜索', icon: 'search', url: '/pages/search/index' },
+  { key: 'ai', label: 'Link AI', icon: 'sparkle', url: '/pages/ai/index' },
   { key: 'notifications', label: '通知', icon: 'bell', url: '/pages/notifications/index' },
   { key: 'contact', label: '私信', icon: 'message-square', url: '/pages/contact/index' },
 ] as const
